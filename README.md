@@ -1,10 +1,10 @@
-=====================================================
+#####################################################
    		 Polyphase filter
   Many-Core Acceleration of the Polyphase Filter
------------------------------------------------------
+
  people: Jan Novotny, Karel Adamek, Stanislav Hledik
  	 Wes Armour, Aris Karastergiou, John Miller
-=====================================================
+#####################################################
 
 This document show the basic structure of the folders
 and basic info. During the time I will add more information.
