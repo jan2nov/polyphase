@@ -1,10 +1,10 @@
-=====================================================
-   		 Polyphase filter
+#####################################################
+				Polyphase filter
   Many-Core Acceleration of the Polyphase Filter
------------------------------------------------------
+
  people: Jan Novotny, Karel Adamek, Stanislav Hledik
  	 Wes Armour, Aris Karastergiou, John Miller
-=====================================================
+#####################################################
 
 This document show the basic structure of the folders
 and basic info. During the time I will add more information.
@@ -17,5 +17,8 @@ i.e. you can't compile it.
 
 -- in the Directory /testData
 Is added a *.nb sheet for Mathematica containing some idea how can be generated
-the test data.
+the test data. --need update
+
+-- new folder Documents - version0.jpg and version1.jpg -- consulting
+	the many core algorithms for CPU
 
