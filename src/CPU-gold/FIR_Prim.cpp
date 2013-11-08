@@ -49,6 +49,32 @@ bool Save_data_spectra(char str[],float *spectra_real, float *spectra_img, unsig
 	return(1);
 }
 
+bool Save_window_data(float *coeff, unsigned int nChannels, unsigned int nTaps){
+	ofstream FILEOUT;
+	FILEOUT.open("window.tap");
+
+	for(unsigned int t=0;t<nTaps;t++){
+		for (unsigned int c=0;c<nChannels;c++){
+			FILEOUT << coeff[t*nChannels+c] << endl;
+		}
+	}
+
+	FILEOUT.close();
+	return (true);
+}
+
+bool Load_window_data(ifstream &FILEIN, float *coeff){
+	unsigned int count=0;
+	ifstream FILEIN;
+	FILEIN.open("window.tap",ios::in);
+	while (!FILEIN.eof()){
+		FILEIN >> coeff[count];
+		count++;
+	}
+	return(1);
+}
+
+
 void Setup_buffer(float *w_buffer, float *real, float *img, unsigned int *oldesttap, int nChannels, int nTaps){
 	*oldesttap=7;
 
@@ -96,7 +122,7 @@ int main(void) {
 	
 	//--------------> Loading data from file
 	ifstream FILEIN;
-	FILEIN.open("fakedata1.dat",ios::in);
+	FILEIN.open("example3.dat",ios::in);
 	if (!FILEIN.fail()){
 		filesize=File_size_row(FILEIN);
 		
@@ -134,6 +160,7 @@ int main(void) {
 	coeff = new float [nChannels * nTaps];
 	//Creating filter window
 	Window_coefficients(nTaps,nChannels,1,coeff);
+	Save_window_data(coeff,nChannels,nTaps);
 	//-----------------------------------------------------------------------
 	
 	
@@ -176,7 +203,7 @@ int main(void) {
 		exit(101);
 	}
 	for(int bl=nTaps-1;bl<nBlocks;bl++){
-		// due to wrong design I cannot use memcpy
+		// I need better memory arrangement
 		for(int f=0;f<N;f++){
 			in[f][0]=spectra_real[bl*nChannels+f];
 			in[f][1]=spectra_img[bl*nChannels+f];
@@ -193,20 +220,6 @@ int main(void) {
 
 	sprintf(str,"outtest_w_DFT.dat");
 	Save_data_spectra(str,spectra_real,spectra_img,filesize,nTaps,nChannels);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
