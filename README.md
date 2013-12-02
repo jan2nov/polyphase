@@ -1,5 +1,9 @@
 #####################################################
+<<<<<<< HEAD
    		 Polyphase filter
+=======
+				Polyphase filter
+>>>>>>> 3f8f13e7de9afb14cccbbf5cd122b7fc1970e16c
   Many-Core Acceleration of the Polyphase Filter
 
  people: Jan Novotny, Karel Adamek, Stanislav Hledik
@@ -17,5 +21,8 @@ i.e. you can't compile it.
 
 -- in the Directory /testData
 Is added a *.nb sheet for Mathematica containing some idea how can be generated
-the test data.
+the test data. --need update
+
+-- new folder Documents - version0.jpg and version1.jpg -- consulting
+	the many core algorithms for CPU
 
