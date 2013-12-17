@@ -1,3 +1,8 @@
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+
 long int File_size_row(ifstream &FILEIN){
 		std::size_t count=0;
 		FILEIN.seekg(0,ios::beg);
@@ -5,7 +10,7 @@ long int File_size_row(ifstream &FILEIN){
 	return((long int)count);
 }
 
-bool Load_data(ifstream &FILEIN, float2 *data, long int size){
+bool Load_data(ifstream &FILEIN, float2 *data){
 	long int count = 0;
 	while (!FILEIN.eof()){
 		FILEIN >> data[count].x;
@@ -15,7 +20,7 @@ bool Load_data(ifstream &FILEIN, float2 *data, long int size){
 	return(1);
 }
 
-bool Save_data_spectra(char str[],float2 *spectra, unsigned int size, unsigned int nTaps, unsigned int nChannels){
+bool Save_data_spectra(char str[],float2 *spectra, unsigned int size){
 	ofstream FILEOUT;
 	FILEOUT.open(str);
 	for (unsigned int c = 0; c < size; c++){
