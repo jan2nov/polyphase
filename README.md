@@ -1,9 +1,6 @@
 #####################################################
-<<<<<<< HEAD
+
    		 Polyphase filter
-=======
-				Polyphase filter
->>>>>>> 3f8f13e7de9afb14cccbbf5cd122b7fc1970e16c
   Many-Core Acceleration of the Polyphase Filter
 
  people: Jan Novotny, Karel Adamek, Stanislav Hledik
