@@ -12,6 +12,10 @@
 *.so.*
 *.dylib
 
+# mess
+*.*~
+*~
+
 # Executables
 *.exe
 *.out

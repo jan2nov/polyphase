@@ -42,14 +42,17 @@ int main(int argc, char **argv){
 	h_coeff 	= (float *)malloc(nTaps*nChannels*sizeof(float));
 	if (debug) printf("done.");
 
-	if (debug) printf("\nHost memory memset...\t");
+	if (debug) printf("\nHost memory memset...\t\t");
 	memset(h_spectra, 0.0, sizeof(Complex)*data_size);	
 	memset(h_spectra_ref, 0.0, sizeof(Complex)*data_size);	
 	if (debug) printf("done.");
 
+	if (debug) printf("\nLoad window coefficients...\t");
 	Load_window_data(h_coeff);
+	if (debug) printf("done.");
 
-	printf("Ano.\n");
+
+	if (debug) printf("\nRandom data set...\t\t");	
 	srand(time(NULL));
 	for (int i=0; i < (int)data_size; i++){
 		h_signal[i].x = rand() / (float)RAND_MAX;
@@ -60,10 +63,11 @@ int main(int argc, char **argv){
 		h_real[i] = h_signal[i].x;
 		h_img[i]  = h_signal[i].y;
 	}
+	if (debug) printf("done.");
 
-	printf("\nReference calculation...\t");
+	if (debug) printf("\nReference calculation...\t");
 	reference_calculation(h_signal, h_spectra_ref, h_coeff, nChannels, nBlocks);
-	printf("done.\n");
+	if (debug) printf("done.\n");
 
 	gpu_code(h_real, h_img, h_spectra, h_coeff, nChannels, nBlocks, data_size, NUM_BLOCKS);
 

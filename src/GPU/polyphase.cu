@@ -62,36 +62,51 @@ void gpu_code(  float *real,
   int devCount, device;
   
   checkCudaErrors(cudaGetDeviceCount(&devCount));
-  printf("There are %d devices.", devCount);
+  printf("\n\t\t-------------- GPU part -----------------");
+  printf("\nThere are %d devices.", devCount);
 
   for (int i = 0; i < devCount; i++){
-    cudaDeviceProp devProp;
-    checkCudaErrors(cudaGetDeviceProperties(&devProp, i));
-    if (!strncmp("Tesla", devProp.name, 5)) device = i;
+	cudaDeviceProp devProp;
+	checkCudaErrors(cudaGetDeviceProperties(&devProp,i));	
+	printf("\n\t Using device:\t\t\t%s\n", devProp.name);
+	device = i;
+	checkCudaErrors(cudaSetDevice(device));
   }
-  printf("\n\t Using device:\t\t\t%d", device);
 
-  checkCudaErrors(cudaSetDevice(device));
+
+
 //------------ memory setup -------------------------------------
 	float2 *d_spectra;
 	float  *d_real, *d_img, *d_coeff;
+	GpuTimer timer;
 
 	float run_time = -1.1f;
 
 	//malloc
+	printf("\nDevice memory allocation...\t\t");
+	timer.Start();
 	checkCudaErrors(cudaMalloc((void **) &d_spectra, sizeof(float2)*filesize));
 	checkCudaErrors(cudaMalloc((void **) &d_coeff,   sizeof(float)*nChannels*nTaps));
 	checkCudaErrors(cudaMalloc((void **) &d_real,    sizeof(float)*filesize));
 	checkCudaErrors(cudaMalloc((void **) &d_img,     sizeof(float)*filesize));
+	timer.Stop();
+	printf("done in %g ms.", timer.Elapsed());
 
 	// set to 0.0
+	printf("\nDevice memset...\t\t\t");
+	timer.Start();
 	checkCudaErrors(cudaMemset(d_spectra, 0.0, sizeof(float2)*filesize));
+	timer.Stop();
+	printf("done in %g ms.", timer.Elapsed());
 
 	// copy data to device
+	printf("\nCopy data from host to device...\t");
+	timer.Start();
 	checkCudaErrors(cudaMemcpy(d_coeff, coeff, nChannels*nTaps*sizeof(float), cudaMemcpyHostToDevice));
 	checkCudaErrors(cudaMemcpy(d_real, real, filesize*sizeof(float), cudaMemcpyHostToDevice));
 	checkCudaErrors(cudaMemcpy(d_img,  img,  filesize*sizeof(float), cudaMemcpyHostToDevice));
-
+	timer.Stop();
+	printf("done in %g ms.", timer.Elapsed());
 //---------------------------------------------------------
 
 //--------------- Fir ----------------------------
@@ -99,15 +114,15 @@ void gpu_code(  float *real,
 	//dim3 gridSize(512, blocks_y, 1);
 	dim3 blockSize(nChannels/gridSize.y, 1, 1); 
 	
-	GpuTimer timer;
-
 	timer.Start();
 	Fir<<<gridSize, blockSize>>>(d_real, d_img, d_coeff, nTaps, nChannels, d_spectra);
 	timer.Stop();
 	run_time=timer.Elapsed();
 	cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
-
-	printf("%d %lf %i %lf %lf\n",nBlocks/12,run_time,nChannels/blocks_y, 53248.0*(nBlocks-nTaps+1)*1000/run_time, 16384.0*(nBlocks-nTaps+1)*1000.0/run_time);
+	printf("\n\t\t------------ Kernel run -----------------");
+	printf("\nFir kernel \n");
+	printf("\n\n blocks \t time \t\t threads \t bandwidth \t flops");
+	printf("\n%d \t\t %lf \t %i \t\t %g \t %g\n",nBlocks/12,run_time,nChannels/blocks_y, 53248.0*(nBlocks-nTaps+1)*1000/run_time, 16384.0*(nBlocks-nTaps+1)*1000.0/run_time);
 
 //--------------- cuFFT ----------------------------
 
@@ -116,8 +131,11 @@ void gpu_code(  float *real,
 	cufftPlan1d(&plan, nChannels, CUFFT_C2C, nBlocks);
 
 	//execute plan and copy back to host
+	printf("\n\ncuFFT plan...\t\t");
+	timer.Start();
 	cufftExecC2C(plan, (cufftComplex *)d_spectra, (cufftComplex *)d_spectra, CUFFT_FORWARD);
-	
+	timer.Stop();
+	printf("done in %g ms.\n\n", timer.Elapsed());
 
 	//Destroy the cuFFT plan
 	cufftDestroy(plan);
