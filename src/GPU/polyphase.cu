@@ -1,6 +1,7 @@
 #include <cuda.h>
 #include <stdio.h>
 #include <cufft.h>
+#include <string.h>
 #include "utils_cuda.h"
 //#include <cutil_inline.h>
 #include "data.h"
@@ -57,7 +58,20 @@ void gpu_code(  float *real,
 		unsigned int nBlocks, 
 		unsigned int filesize,
 		int blocks_y){
+//------------ initialize card -----------
+  int devCount, device;
+  
+  checkCudaErrors(cudaGetDeviceCount(&devCount));
+  printf("There are %d devices.", devCount);
 
+  for (int i = 0; i < devCount; i++){
+    cudaDeviceProp devProp;
+    checkCudaErrors(cudaGetDeviceProperties(&devProp, i));
+    if (!strncmp("Tesla", devProp.name, 5)) device = i;
+  }
+  printf("\n\t Using device:\t\t\t%d", device);
+
+  checkCudaErrors(cudaSetDevice(device));
 //------------ memory setup -------------------------------------
 	float2 *d_spectra;
 	float  *d_real, *d_img, *d_coeff;
@@ -93,7 +107,7 @@ void gpu_code(  float *real,
 	run_time=timer.Elapsed();
 	cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
 
-	printf("%d %g %i %g %g\n",nBlocks/12,run_time,nChannels/blocks_y, 53248.0*(nBlocks-nTaps+1)*1000/run_time, 16384.0*(nBlocks-nTaps+1)*1000.0/run_time);
+	printf("%d %lf %i %lf %lf\n",nBlocks/12,run_time,nChannels/blocks_y, 53248.0*(nBlocks-nTaps+1)*1000/run_time, 16384.0*(nBlocks-nTaps+1)*1000.0/run_time);
 
 //--------------- cuFFT ----------------------------
 
