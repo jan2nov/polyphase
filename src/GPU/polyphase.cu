@@ -7,6 +7,8 @@
 #include "data.h"
 #include "timer.h"
 
+__constant__ float C_coeff[4096];
+
 __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coeff, const int nTaps, const int nChannels, float2 *spectra)
 {
 	int tx = threadIdx.x + blockDim.x*blockIdx.y;
@@ -21,6 +23,27 @@ __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coef
 	  i_data = i + index;
 	  local_spectra_x += coeff[i_coeff]*d_signal_real[i_data];
 	  local_spectra_y += coeff[i_coeff]*d_signal_img[i_data];
+	}
+		
+	spectra[index].x=local_spectra_x;
+	spectra[index].y=local_spectra_y;
+	//return;
+}
+
+__global__ void Fir_02(float *d_signal_real, float *d_signal_img, const int nTaps, const int nChannels, float2 *spectra)
+{
+	int tx = threadIdx.x + blockDim.x*blockIdx.y;
+	int index = nChannels*blockIdx.x + tx;
+	int i, i_coeff, i_data;
+	float local_spectra_x = 0.0f;
+	float local_spectra_y = 0.0f;
+
+	for(int t=0;t<nTaps;t++){
+	  i = t*nChannels;
+	  i_coeff = i + tx;
+	  i_data = i + index;
+	  local_spectra_x += C_coeff[i_coeff]*d_signal_real[i_data];
+	  local_spectra_y += C_coeff[i_coeff]*d_signal_img[i_data];
 	}
 		
 	spectra[index].x=local_spectra_x;
@@ -65,15 +88,13 @@ void gpu_code(  float *real,
   printf("\n\t\t-------------- GPU part -----------------");
   printf("\nThere are %d devices.", devCount);
 
-  for (int i = 0; i < devCount; i++){
+  for (int i = 0; i < devCount - 1; i++){
 	cudaDeviceProp devProp;
 	checkCudaErrors(cudaGetDeviceProperties(&devProp,i));	
 	printf("\n\t Using device:\t\t\t%s\n", devProp.name);
 	device = i;
 	checkCudaErrors(cudaSetDevice(device));
   }
-
-
 
 //------------ memory setup -------------------------------------
 	float2 *d_spectra;
@@ -103,6 +124,7 @@ void gpu_code(  float *real,
 	printf("\nCopy data from host to device...\t");
 	timer.Start();
 	checkCudaErrors(cudaMemcpy(d_coeff, coeff, nChannels*nTaps*sizeof(float), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpyToSymbol(C_coeff,  coeff,   sizeof(float)*nChannels*nTaps));
 	checkCudaErrors(cudaMemcpy(d_real, real, filesize*sizeof(float), cudaMemcpyHostToDevice));
 	checkCudaErrors(cudaMemcpy(d_img,  img,  filesize*sizeof(float), cudaMemcpyHostToDevice));
 	timer.Stop();
@@ -115,7 +137,7 @@ void gpu_code(  float *real,
 	dim3 blockSize(nChannels/gridSize.y, 1, 1); 
 	
 	timer.Start();
-	Fir<<<gridSize, blockSize>>>(d_real, d_img, d_coeff, nTaps, nChannels, d_spectra);
+	Fir_02<<<gridSize, blockSize>>>(d_real, d_img, nTaps, nChannels, d_spectra);
 	timer.Stop();
 	run_time=timer.Elapsed();
 	cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
