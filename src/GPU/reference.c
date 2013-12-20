@@ -18,8 +18,8 @@ float reference_code(float2 *spectra_ref,
 	    diff = spectra_ref[i + 7*nChannels + j*nChannels].x - spectra[j*nChannels + i].x;
 	      error_norm += diff * diff;
 	      //printf("Ahoj %g %g\n", h_spectra_ref[i + 7*nChannels].x, h_spectra[i].x);
-	      diff = spectra_ref[i + 7*nChannels + j*nChannels].y - spectra[j*nChannels + i].y;
-	      error_norm += diff * diff;
+	//      diff = spectra_ref[i + 7*nChannels + j*nChannels].y - spectra[j*nChannels + i].y;
+	  //    error_norm += diff * diff;
 	  }
 	}
 	error_norm = (float)sqrt((double)error_norm);

@@ -24,7 +24,7 @@ ANALYZE = analyze.x
 # fmad flags used for reason of floating point operation
 ###############################################################
 NVCCFLAGS = -O3 -fmad=false -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcompiler -Wextra
-#NVCCFLAGS= -g -G -arch=sm_20 --ptxas-options=-v --use_fast_math -Wall -Wextra -Xcompiler
+#NVCCFLAGS= -g -G -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcompiler -Wextra
 GCC_OPTS =-O3 -Wall -Wextra 
 
 all:	analyze

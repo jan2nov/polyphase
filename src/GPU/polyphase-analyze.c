@@ -38,7 +38,7 @@ int main(int argc, char **argv){
 	h_real	 	= (float *)malloc(data_size*sizeof(float));
 	h_img	 	= (float *)malloc(data_size*sizeof(float));
 	h_spectra 	= (Complex *)malloc(data_size*sizeof(Complex));
-	h_spectra_ref 	= (Complex *)malloc(data_size*sizeof(Complex));
+	h_spectra_ref = (Complex *)malloc(data_size*sizeof(Complex));
 	h_coeff 	= (float *)malloc(nTaps*nChannels*sizeof(float));
 	if (debug) printf("done.");
 
