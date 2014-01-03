@@ -18,6 +18,7 @@ NVCC = nvcc
 
 # name of executables file
 ANALYZE = analyze.x
+STREAM = stream.x
 
 ###############################################################
 # Basic flags for compilers, one for debug options
@@ -27,16 +28,26 @@ NVCCFLAGS = -O3 -fmad=false -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcom
 #NVCCFLAGS= -g -G -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcompiler -Wextra
 GCC_OPTS =-O3 -Wall -Wextra 
 
-all:	analyze
+all:	analyze stream
 
 main.o:	main.c
 	$(GCC) -c main.c $(GCC_OPTS) $(INC)
+
+stream: polyphase-stream.o utils_cuda.h timer.h stream-test.o reference.o Makefile
+	$(NVCC) -o $(STREAM) polyphase-stream.o stream-test.o reference.o $(LIB) $(NVCCFLAGS)
 
 analyze: polyphase-analyze.o utils_cuda.h timer.h polyphase.o reference.o Makefile
 	$(NVCC) -o $(ANALYZE) polyphase-analyze.o polyphase.o reference.o $(LIB) $(NVCCFLAGS)
 
 polyphase-analyze.o: polyphase-analyze.c utils_file.h timer.h data.h
 	$(GCC) -c polyphase-analyze.c $(GCC_OPTS) $(INC)
+
+polyphase-stream.o: polyphase-stream.c utils_file.h timer.h data.h
+	$(GCC) -c polyphase-stream.c $(GCC_OPTS) $(INC)
+
+
+stream-test.o: stream-test.cu utils_cuda.h data.h timer.h
+	$(NVCC) -c stream-test.cu $(NVCCFLAGS)
 
 polyphase.o: polyphase.cu utils_cuda.h data.h timer.h
 	$(NVCC) -c polyphase.cu $(NVCCFLAGS)

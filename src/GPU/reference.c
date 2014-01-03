@@ -8,18 +8,17 @@
 float reference_code(float2 *spectra_ref, 
 		     float2 *spectra, 
 		     const int nChannels, 
+		     unsigned int nTaps, 
 		     unsigned int nBlocks){
 
 	float diff = 0.0f, error_norm = 0.0f;
-	int nTaps = 8;
-
-	for (int j = 0; j < (int)nBlocks - nTaps + 1; j++){
+	for (int j = 0; j < (int)nBlocks - (int)nTaps + 1; j++){
 	  for (int i = 0; i < nChannels; i++) {
 	    diff = spectra_ref[i + 7*nChannels + j*nChannels].x - spectra[j*nChannels + i].x;
 	      error_norm += diff * diff;
-	      //printf("Ahoj %g %g\n", h_spectra_ref[i + 7*nChannels].x, h_spectra[i].x);
-	//      diff = spectra_ref[i + 7*nChannels + j*nChannels].y - spectra[j*nChannels + i].y;
-	  //    error_norm += diff * diff;
+	   //   if (diff != 0.0) printf("%i %g %g\n", i +j*nChannels  , spectra_ref[i + 7*nChannels+ j*nChannels ].x, spectra[j*nChannels + i].x);
+	      diff = spectra_ref[i + 7*nChannels + j*nChannels].y - spectra[j*nChannels + i].y;
+	      error_norm += diff * diff;
 	  }
 	}
 	error_norm = (float)sqrt((double)error_norm);
@@ -77,8 +76,8 @@ void Fir_cpu(float *w_buffer,
 			for(int t=0; t<nTaps; t++){
 				tap=(*oldesttap+t)%(nTaps);
 				//printf("%d\n", tap);
-				for(int c=0; c < nChannels; c++){
-				  spectra[bl*nChannels+c].x += (float)(coeff[t*nChannels+c]*w_buffer[tap*2*nChannels+c]);
+				for(int c=0; c < nChannels; c++){ 
+				  spectra[bl*nChannels+c].x += (coeff[t*nChannels+c]*w_buffer[tap*2*nChannels+c]);
 				  spectra[bl*nChannels+c].y += coeff[t*nChannels+c]*w_buffer[tap*2*nChannels+c+nChannels];
 				}
 			}
@@ -99,7 +98,7 @@ void  reference_calculation(float2 *inputVals,
 	Setup_buffer(w_buffer, inputVals, &oldesttap, nChannels, nTaps);
 	Fir_cpu(w_buffer, inputVals, &oldesttap, nChannels, nTaps, nBlocks, coeff, outputVals);
 
-		fftwf_plan p;
+/*		fftwf_plan p;
 		fftwf_complex *in, *out;
 
 		in = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * nChannels);
@@ -124,6 +123,6 @@ void  reference_calculation(float2 *inputVals,
 
 	fftwf_destroy_plan(p);
 	fftwf_free(in);
-	fftwf_free(out);
+	fftwf_free(out);*/
 	delete[] w_buffer;
 }
