@@ -78,7 +78,7 @@ int main(int argc, char **argv){
 	
 	if (debug){
 		error = reference_code(h_spectra_ref, h_spectra_pinned, nChannels, nTaps, nBlocks);
-		printf( "\n\nerror = %lf\n", error);
+		printf( "error = %lf\n", error);
 	}
 
 	checkCudaErrors(cudaFreeHost(h_spectra_pinned));
