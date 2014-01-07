@@ -46,7 +46,7 @@ void gpu_code(  float *real,
   printf("\n\t\t-------------- GPU part -----------------");
   printf("\nThere are %d devices.", devCount);
 
-  for (int i = 0; i < devCount; i++){
+  for (int i = 0; i < devCount -1 ; i++){
 	cudaDeviceProp devProp;
 	checkCudaErrors(cudaGetDeviceProperties(&devProp,i));	
 	printf("\n\t Using device:\t\t\t%s\n", devProp.name);
@@ -122,14 +122,14 @@ void gpu_code(  float *real,
 	cufftDestroy(plan);
 */
 //--------------- copy data back ----------------------------
-
 	checkCudaErrors(cudaMemcpy(spectra,d_spectra,filesize*sizeof(float2), cudaMemcpyDeviceToHost));	
 timer2.Stop();
 printf("\nDone in %g ms.\n", timer2.Elapsed());
 //--------------- clean-up process ----------------------------
+	
 	checkCudaErrors(cudaFree(d_spectra));
 	checkCudaErrors(cudaFree(d_real));
 	checkCudaErrors(cudaFree(d_img));
 	checkCudaErrors(cudaFree(d_coeff));
-
+checkCudaErrors(cudaDeviceReset());
 }

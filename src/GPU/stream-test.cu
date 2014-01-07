@@ -53,7 +53,7 @@ void gpu_code(  float *real,
 	printf("\n\t Using device:\t\t\t%s\n", devProp.name);
 	printf("\t Concurrent kernels:\t\t\t%i\n", devProp.concurrentKernels);
 	printf("\t Async Engine Count:\t\t\t%i\n", devProp.asyncEngineCount);
-	device = i;
+	device = 0;
 	// set some preferable card
 	checkCudaErrors(cudaSetDevice(device));
   }
@@ -75,8 +75,7 @@ timer.Start();
 
 //------------ memory setup -------------------------------------
 	float *d_coeff;
-	float seg_blocks = 1; // each segment compute # of spectra
-	float 
+	int seg_blocks = 5000; // each segment compute # of spectra
 	int run_blocks = nBlocks - nTaps + 1; // needed blocks for run on whole host data
 	int SegSize = (seg_blocks + nTaps - 1)*nChannels; //size of each segment in the buffer
 	int seg_offset = seg_blocks*nChannels;
@@ -128,19 +127,19 @@ for (int i = 0; i < run_blocks; i+=seg_blocks*2){
 		printf("%i\n", i);
 		checkCudaErrors(cudaMemcpyAsync(d_real_0, real + i*nChannels, sizeof(float)*SegSize, cudaMemcpyHostToDevice, stream0));
 		checkCudaErrors(cudaMemcpyAsync(d_img_0, img + i*nChannels, sizeof(float)*SegSize, cudaMemcpyHostToDevice, stream0));
-		checkCudaErrors(cudaMemcpyAsync(d_real_1, real + seg_offset + i*nChannels, sizeof(float)*SegSize, cudaMemcpyHostToDevice, stream1));
-		checkCudaErrors(cudaMemcpyAsync(d_img_1, img + seg_offset + i*nChannels, sizeof(float)*SegSize, cudaMemcpyHostToDevice, stream1));
 //	time_memory.Stop();
 //	mem_time+=time_memory.Elapsed();
 
 //	time_kernels.Start();
 		Fir<<<gridSize0, blockSize0, 0, stream0>>>(d_real_0, d_img_0, d_coeff, nTaps, nChannels, d_spectra_0);
-		Fir<<<gridSize0, blockSize0, 0, stream1>>>(d_real_1, d_img_1, d_coeff, nTaps, nChannels, d_spectra_1);
+	  checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels, d_spectra_0, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream0));
 //	time_kernels.Stop();
 //	ker_time+=time_kernels.Elapsed();
 
 //	time_memory.Start();
-		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels, d_spectra_0, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream0));
+		checkCudaErrors(cudaMemcpyAsync(d_real_1, real + seg_offset + i*nChannels, sizeof(float)*SegSize, cudaMemcpyHostToDevice, stream1));
+		checkCudaErrors(cudaMemcpyAsync(d_img_1, img + seg_offset + i*nChannels, sizeof(float)*SegSize, cudaMemcpyHostToDevice, stream1));
+		Fir<<<gridSize0, blockSize0, 0, stream1>>>(d_real_1, d_img_1, d_coeff, nTaps, nChannels, d_spectra_1);
 		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels + seg_offset, d_spectra_1, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream1));
 //	time_memory.Stop();
 	//printf("\nfilesize: %i Run %i\t\n", filesize, i);
