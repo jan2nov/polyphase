@@ -1,6 +1,7 @@
 #include "timer.h"
 //#include "utils.h"
 #include "utils_file.h"
+#include "utils_cuda.h"
 #include "data.h"
 #include <stdio.h>
 #include <string.h>
@@ -85,5 +86,7 @@ int main(int argc, char **argv){
 	delete[] h_spectra;
 	delete[] h_spectra_ref;
 	delete[] h_coeff;
+	
+	checkCudaErrors(cudaDeviceReset());
 
 }

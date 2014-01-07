@@ -40,7 +40,7 @@ void gpu_code(  float *real,
 //------------ initialize card -----------
 
   int devCount, device;
-  GpuTimer timer,timer2;
+  GpuTimer timer;
   
   checkCudaErrors(cudaGetDeviceCount(&devCount));
   printf("\n\t\t-------------- GPU part -----------------");
@@ -55,11 +55,12 @@ void gpu_code(  float *real,
   }
 
 //------------ memory setup -------------------------------------
-	timer2.Start();
+
 	float2 *d_spectra;
 	float  *d_real, *d_img, *d_coeff;
 
 	float run_time = -1.1f;
+	float mem_time = -1.1f;
 
 	//malloc
 	printf("\nDevice memory allocation...\t\t");
@@ -86,7 +87,8 @@ void gpu_code(  float *real,
 	checkCudaErrors(cudaMemcpy(d_real, real, filesize*sizeof(float), cudaMemcpyHostToDevice));
 	checkCudaErrors(cudaMemcpy(d_img,  img,  filesize*sizeof(float), cudaMemcpyHostToDevice));
 	timer.Stop();
-	printf("done in %g ms.", timer.Elapsed());
+	mem_time=timer.Elapsed();
+	printf("done in %g ms.", mem_time);
 //---------------------------------------------------------
 
 //--------------- Fir ----------------------------
@@ -122,14 +124,16 @@ void gpu_code(  float *real,
 	cufftDestroy(plan);
 */
 //--------------- copy data back ----------------------------
-	checkCudaErrors(cudaMemcpy(spectra,d_spectra,filesize*sizeof(float2), cudaMemcpyDeviceToHost));	
-timer2.Stop();
-printf("\nDone in %g ms.\n", timer2.Elapsed());
+	timer.Start();
+		checkCudaErrors(cudaMemcpy(spectra,d_spectra,filesize*sizeof(float2), cudaMemcpyDeviceToHost));	
+	timer.Stop();
+	mem_time+=timer.Elapsed();
+
+printf("\nDone in %g ms.\n", mem_time+run_time);
 //--------------- clean-up process ----------------------------
 	
 	checkCudaErrors(cudaFree(d_spectra));
 	checkCudaErrors(cudaFree(d_real));
 	checkCudaErrors(cudaFree(d_img));
 	checkCudaErrors(cudaFree(d_coeff));
-checkCudaErrors(cudaDeviceReset());
-}
+	}
