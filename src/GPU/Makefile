@@ -13,6 +13,7 @@ INC := -I$(CUDA_HOME)/include #-I$(SDK)
 LIB := -L$(CUDA_HOME)/lib64 -lcudart -lcufft -lfftw3f -lcuda
 
 # use this compilers
+# g++ just because the file write
 GCC = g++
 NVCC = nvcc
 
@@ -39,17 +40,16 @@ stream: polyphase-stream.o utils_cuda.h timer.h stream-test.o reference.o Makefi
 analyze: polyphase-analyze.o utils_cuda.h timer.h polyphase.o reference.o Makefile
 	$(NVCC) -o $(ANALYZE) polyphase-analyze.o polyphase.o reference.o $(LIB) $(NVCCFLAGS)
 
-polyphase-analyze.o: polyphase-analyze.c utils_file.h timer.h data.h
+polyphase-analyze.o: polyphase-analyze.c  timer.h data.h
 	$(GCC) -c polyphase-analyze.c $(GCC_OPTS) $(INC)
 
 polyphase-stream.o: polyphase-stream.c utils_file.h timer.h data.h
 	$(GCC) -c polyphase-stream.c $(GCC_OPTS) $(INC)
 
-
 stream-test.o: stream-test.cu utils_cuda.h data.h timer.h
 	$(NVCC) -c stream-test.cu $(NVCCFLAGS)
 
-polyphase.o: polyphase.cu utils_cuda.h data.h timer.h
+polyphase.o: polyphase.cu utils_cuda.h utils_file.h data.h timer.h
 	$(NVCC) -c polyphase.cu $(NVCCFLAGS)
 
 reference.o: reference.c

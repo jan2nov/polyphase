@@ -3,6 +3,7 @@
 #include <cufft.h>
 #include <string.h>
 #include "utils_cuda.h"
+#include "utils_file.h"
 //#include <cutil_inline.h>
 #include "data.h"
 #include "timer.h"
@@ -14,6 +15,7 @@ __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coef
 	int i, i_coeff, i_data;
 	float local_spectra_x = 0.0f;
 	float local_spectra_y = 0.0f;
+	if (index ==0 ) printf("\nble %g\n", d_signal_real[0]);
 	
 	for(int t=0;t<nTaps;t++){
 	  i = t*nChannels;
@@ -28,7 +30,6 @@ __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coef
 	//return;
 }
 
-
 void gpu_code(  float *real,
 				float *img, 
 				float2 *spectra, 
@@ -37,30 +38,39 @@ void gpu_code(  float *real,
 				unsigned int nBlocks, 
 				unsigned int filesize,
 				int blocks_y){
+
+ bool WRITE=false;					
 //------------ initialize card -----------
 
   int devCount, device;
-  GpuTimer timer;
+  int maxgrid_x = 0;
   
   checkCudaErrors(cudaGetDeviceCount(&devCount));
   printf("\n\t\t-------------- GPU part -----------------");
   printf("\nThere are %d devices.", devCount);
 
-  for (int i = 0; i < devCount -1 ; i++){
+  for (int i = 0; i < devCount - 1; i++){
 	cudaDeviceProp devProp;
-	checkCudaErrors(cudaGetDeviceProperties(&devProp,i));	
+	device = 1;
+	checkCudaErrors(cudaGetDeviceProperties(&devProp,device));	
 	printf("\n\t Using device:\t\t\t%s\n", devProp.name);
-	device = i;
+	printf("\n\t Max grid size:\t\t\t%d\n", devProp.maxGridSize[0]);
+	maxgrid_x = devProp.maxGridSize[0];
+	  }
 	checkCudaErrors(cudaSetDevice(device));
-  }
-
+	
 //------------ memory setup -------------------------------------
+	
+	// if set before set device getting errors - invalid handle
+	GpuTimer timer;  
 
 	float2 *d_spectra;
 	float  *d_real, *d_img, *d_coeff;
 
-	float run_time = -1.1f;
-	float mem_time = -1.1f;
+	float fir_time = 0.0f;
+	float fft_time = 0.0f;
+	float mem_time_in = 0.0f;
+	float mem_time_out = 0.0f;
 
 	//malloc
 	printf("\nDevice memory allocation...\t\t");
@@ -74,38 +84,56 @@ void gpu_code(  float *real,
 
 	// set to 0.0
 	printf("\nDevice memset...\t\t\t");
-	timer.Start();
-	checkCudaErrors(cudaMemset(d_spectra, 0.0, sizeof(float2)*filesize));
-	timer.Stop();
+		timer.Start();
+			checkCudaErrors(cudaMemset(d_spectra, 0.0, sizeof(float2)*filesize));
+		timer.Stop();
 	printf("done in %g ms.", timer.Elapsed());
 
 	// copy data to device
 	printf("\nCopy data from host to device...\t");
-	timer.Start();
-	checkCudaErrors(cudaMemcpy(d_coeff, coeff, nChannels*nTaps*sizeof(float), cudaMemcpyHostToDevice));
-	//checkCudaErrors(cudaMemcpyToSymbol(C_coeff,  coeff,   sizeof(float)*nChannels*nTaps));
-	checkCudaErrors(cudaMemcpy(d_real, real, filesize*sizeof(float), cudaMemcpyHostToDevice));
-	checkCudaErrors(cudaMemcpy(d_img,  img,  filesize*sizeof(float), cudaMemcpyHostToDevice));
-	timer.Stop();
-	mem_time=timer.Elapsed();
-	printf("done in %g ms.", mem_time);
-//---------------------------------------------------------
+		timer.Start();
+			checkCudaErrors(cudaMemcpy(d_coeff, coeff, nChannels*nTaps*sizeof(float), cudaMemcpyHostToDevice));
+			//checkCudaErrors(cudaMemcpyToSymbol(C_coeff,  coeff,   sizeof(float)*nChannels*nTaps));
+			checkCudaErrors(cudaMemcpy(d_real, real, filesize*sizeof(float), cudaMemcpyHostToDevice));
+			checkCudaErrors(cudaMemcpy(d_img,  img,  filesize*sizeof(float), cudaMemcpyHostToDevice));
+		timer.Stop();
+	mem_time_in=timer.Elapsed();
+	printf("done in %g ms.\n", mem_time_in);
 
-//--------------- Fir ----------------------------
+	//--------------- Fir ----------------------------
+		
+	int run_blocks = nBlocks - nTaps + 1; 
+	int grid_x;
+	int n_cycle = run_blocks/maxgrid_x + 1;
+	printf("n_cycle : %d \n", n_cycle);
 
-	//dim3 gridSize(1, (int)(nChannels*nSpectra-1)/blocks_y + 1, 1);
-	dim3 gridSize( (nBlocks - nTaps + 1), blocks_y, 1);
-	dim3 blockSize(nChannels/gridSize.y, 1, 1); 
+	printf("\n\t\t------------ Kernel run-----------------");
+	for (int i = 0; i < n_cycle; i++){
+		
+		if (maxgrid_x < run_blocks){
+									grid_x = maxgrid_x;
+									run_blocks = run_blocks - maxgrid_x;
+															
+		} else grid_x = run_blocks;
+		
+		dim3 gridSize(grid_x, blocks_y, 1);
+		dim3 blockSize(nChannels/gridSize.y, 1, 1); 
 	
-	timer.Start();
-		Fir<<<gridSize, blockSize>>>(d_real, d_img, d_coeff, nTaps, nChannels, d_spectra);
-	timer.Stop();
-	run_time=timer.Elapsed();
-	cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
-	printf("\n\t\t------------ Kernel run -----------------");
-	printf("\nFir kernel \n");
-	printf("\n\n blocks \t time \t\t threads \t bandwidth \t flops");
-	printf("\n%d \t\t %lf \t %i \t\t %g \t %g\n",nBlocks/12,run_time,nChannels/blocks_y, 53248.0*(nBlocks-nTaps+1)*1000/run_time, 16384.0*(nBlocks-nTaps+1)*1000.0/run_time);
+		timer.Start();
+			Fir<<<gridSize, blockSize>>>(d_real + i*(maxgrid_x+1)*nChannels, d_img + i*(maxgrid_x-nTaps+1)*nChannels, d_coeff, nTaps, nChannels, d_spectra + i*maxgrid_x);
+		timer.Stop();
+		fir_time+=timer.Elapsed();
+	
+		//----- error check -----
+			checkCudaErrors(cudaGetLastError());
+			checkCudaErrors(cudaDeviceSynchronize());
+		//-----------------------
+	
+		printf("\nFir kernel %d\n", i);
+		printf("\n\n blocks \t time \t\t threads \t bandwidth \t flops");
+		printf("\n%d \t\t %lf \t %i \t\t %g \t %g\n",grid_x, fir_time, nChannels/blocks_y, 
+													(3*nChannels*nTaps*sizeof(float)+nChannels*2*sizeof(float))*(nBlocks-nTaps+1)*1000/fir_time, 
+													(4*nTaps)*nChannels*(nBlocks-nTaps+1)*1000.0/fir_time);
 
 //--------------- cuFFT ----------------------------
 /*
@@ -115,25 +143,42 @@ void gpu_code(  float *real,
 
 	//execute plan and copy back to host
 	printf("\n\ncuFFT plan...\t\t");
-	timer.Start();
-	cufftExecC2C(plan, (cufftComplex *)d_spectra, (cufftComplex *)d_spectra, CUFFT_FORWARD);
-	timer.Stop();
+		timer.Start();
+			cufftExecC2C(plan, (cufftComplex *)d_spectra, (cufftComplex *)d_spectra, CUFFT_FORWARD);
+		timer.Stop();
+		fft_time = timer.Elapsed();
 	printf("done in %g ms.\n\n", timer.Elapsed());
 
 	//Destroy the cuFFT plan
 	cufftDestroy(plan);
+
 */
+}
 //--------------- copy data back ----------------------------
+	printf("Copy data from device to host \t");
 	timer.Start();
 		checkCudaErrors(cudaMemcpy(spectra,d_spectra,filesize*sizeof(float2), cudaMemcpyDeviceToHost));	
 	timer.Stop();
-	mem_time+=timer.Elapsed();
+	printf("done in %g ms.\n", timer.Elapsed());
+	mem_time_out=timer.Elapsed();
 
-printf("\nDone in %g ms.\n", mem_time+run_time);
+printf("\nTotal execution time %g ms.\n", mem_time_in + fir_time + mem_time_out);
+
+//---------------- write to file process ----------------------
+
+	char str[200];
+	sprintf(str,"GPU-polyphase.dat");
+	
+		printf("\n Write results into file...\t");
+		if (WRITE) save_time(str, nBlocks-nTaps+1, fir_time, fft_time, mem_time_in, mem_time_out, nChannels, nTaps);
+		printf("\t done.\n-------------------------------------\n");
+
 //--------------- clean-up process ----------------------------
 	
 	checkCudaErrors(cudaFree(d_spectra));
 	checkCudaErrors(cudaFree(d_real));
 	checkCudaErrors(cudaFree(d_img));
 	checkCudaErrors(cudaFree(d_coeff));
-	}
+	// device reset is in the polyphase-analyze.c
+	
+}

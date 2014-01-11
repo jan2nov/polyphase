@@ -40,14 +40,13 @@ void gpu_code(  float *real,
 //------------ initialize card -----------
 
   int devCount, device;
-  GpuTimer timer, time_memory, time_kernels;
-  
+    
   checkCudaErrors(cudaGetDeviceCount(&devCount));
   printf("\n\t\t-------------- GPU part -----------------");
   printf("\nThere are %d devices.", devCount);
 
 	//get number of GPU available
-  for (int i = 0; i < devCount; i++){
+  for (int i = 0; i < devCount - 1; i++){
 	cudaDeviceProp devProp;
 	checkCudaErrors(cudaGetDeviceProperties(&devProp,i));	
 	printf("\n\t Using device:\t\t\t%s\n", devProp.name);
@@ -58,6 +57,7 @@ void gpu_code(  float *real,
 	checkCudaErrors(cudaSetDevice(device));
   }
 
+	GpuTimer timer, time_memory, time_kernels;
 
 //------------- stream setup ------------------------------------
 	cudaStream_t stream0, stream1;
