@@ -21,3 +21,6 @@
 *.out
 *.app
 *.x
+
+#data files
+*.dat

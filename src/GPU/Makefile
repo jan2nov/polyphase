@@ -29,6 +29,8 @@ NVCCFLAGS = -O3 -fmad=false -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcom
 #NVCCFLAGS= -g -G -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcompiler -Wextra
 GCC_OPTS =-O3 -Wall -Wextra 
 
+
+
 all:	analyze stream
 
 main.o:	main.c
@@ -56,15 +58,24 @@ reference.o: reference.c
 	$(GCC) -c reference.c $(GCC_OPTS) $(INC)
 
 clean:	
-	rm -f *.o *.~ main $(ANALYZE)
+	rm -f *.o *.~ *.dat main $(ANALYZE)
 	
 run:
 	rm -f GPU-polyphase.dat
 	@printf '#num \t fir \t\t fir+fft \t bandwidth \t flops \t\t HtoD \t\t DtoH\n' > GPU-polyphase.dat
-	./$(ANALYZE) 2 10007
-	./$(ANALYZE) 2 15007
-	./$(ANALYZE) 2 20007
-	./$(ANALYZE) 2 30007
-	./$(ANALYZE) 2 40007
-	./$(ANALYZE) 2 50007
-	./$(ANALYZE) 2 60007
+	./$(ANALYZE) 2 10007 > GPU-10.dat
+	./$(ANALYZE) 2 15007 > GPU-15.dat
+	./$(ANALYZE) 2 20007 > GPU-20.dat
+	./$(ANALYZE) 2 30007 > GPU-30.dat
+	./$(ANALYZE) 2 40007 > GPU-40.dat
+	./$(ANALYZE) 2 50007 > GPU-50.dat
+	./$(ANALYZE) 2 60007 > GPU-60.dat
+
+help:
+	@printf '\n\n-----------------------------------------------------\n'
+	@printf '\t\tWelcome, to the help\n\n'
+	@printf 'For compiling all type: \t\t make\n'
+	@printf 'For compiling analyze: \t\t\t make analyze\n'
+	@printf 'For compiling stream: \t\t\t make stream\n'
+	@printf 'To create data file with times: \t make run\n'
+	@printf '-----------------------------------------------------\n\n'
