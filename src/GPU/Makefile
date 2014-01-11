@@ -63,13 +63,13 @@ clean:
 run:
 	rm -f GPU-polyphase.dat
 	@printf '#num \t fir \t\t fir+fft \t bandwidth \t flops \t\t HtoD \t\t DtoH\n' > GPU-polyphase.dat
-	./$(ANALYZE) 2 10007 > GPU-10.dat
-	./$(ANALYZE) 2 15007 > GPU-15.dat
-	./$(ANALYZE) 2 20007 > GPU-20.dat
-	./$(ANALYZE) 2 30007 > GPU-30.dat
-	./$(ANALYZE) 2 40007 > GPU-40.dat
-	./$(ANALYZE) 2 50007 > GPU-50.dat
-	./$(ANALYZE) 2 60007 > GPU-60.dat
+	./$(ANALYZE) 2 10007 > GPU-10.dt
+	./$(ANALYZE) 2 15007 > GPU-15.dt
+	./$(ANALYZE) 2 20007 > GPU-20.dt
+	./$(ANALYZE) 2 30007 > GPU-30.dt
+	./$(ANALYZE) 2 40007 > GPU-40.dt
+	./$(ANALYZE) 2 50007 > GPU-50.dt
+	./$(ANALYZE) 2 60007 > GPU-60.dt
 
 help:
 	@printf '\n\n-----------------------------------------------------\n'
