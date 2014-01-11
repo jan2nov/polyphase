@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <iomanip> 
 
 using namespace std;
 
@@ -64,7 +65,7 @@ bool save_time(char str[], int num_blocks, float fir_time, float fft_time, float
 	flops = (3*nChannels*nTaps*sizeof(float)+nChannels*2*sizeof(float))*(num_blocks)*1000/fir_time;
 	bandwidth = (4*nTaps)*nChannels*(num_blocks)*1000.0/fir_time;
 	//------------------
-		FILEOUT << num_blocks << " " << fir_time/1000 << " " << fft_time/1000 << " " << mem_time_in/1000  << " " << mem_time_out/1000 << " " << flops << " " << bandwidth << endl;
+		FILEOUT << std::fixed << std::setprecision(8) << num_blocks << "\t" << fir_time/1000 << "\t" << (fir_time+fft_time)/1000 << "\t" << std::scientific << flops << "\t" << bandwidth << "\t" << std::fixed << mem_time_in/1000  << "\t" << mem_time_out/1000  << endl;
 	FILEOUT.close();
 	return 0;
 }

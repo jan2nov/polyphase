@@ -1,5 +1,4 @@
 #include "timer.h"
-//#include "utils.h"
 #include "utils_cuda.h"
 #include "data.h"
 #include <stdio.h>
@@ -67,7 +66,7 @@ int main(int argc, char **argv){
 	}
 	if (debug) printf("done.");
 
-	printf("\n%g %g\n", h_real[0], h_real[65536*512]);
+	//printf("\n%g %g\n", h_real[0], h_real[65536*512]);
 
 	if (debug) printf("\nReference calculation...\t");
 	reference_calculation(h_signal, h_spectra_ref, h_coeff, nChannels, nBlocks);

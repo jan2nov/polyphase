@@ -15,7 +15,6 @@ __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coef
 	int i, i_coeff, i_data;
 	float local_spectra_x = 0.0f;
 	float local_spectra_y = 0.0f;
-	if (index ==0 ) printf("\nble %g\n", d_signal_real[0]);
 	
 	for(int t=0;t<nTaps;t++){
 	  i = t*nChannels;
@@ -39,7 +38,7 @@ void gpu_code(  float *real,
 				unsigned int filesize,
 				int blocks_y){
 
- bool WRITE=false;					
+ bool WRITE=true;					
 //------------ initialize card -----------
 
   int devCount, device;
@@ -49,9 +48,9 @@ void gpu_code(  float *real,
   printf("\n\t\t-------------- GPU part -----------------");
   printf("\nThere are %d devices.", devCount);
 
-  for (int i = 0; i < devCount - 1; i++){
+  for (int i = 0; i < devCount; i++){
 	cudaDeviceProp devProp;
-	device = 1;
+	device = 0;
 	checkCudaErrors(cudaGetDeviceProperties(&devProp,device));	
 	printf("\n\t Using device:\t\t\t%s\n", devProp.name);
 	printf("\n\t Max grid size:\t\t\t%d\n", devProp.maxGridSize[0]);
@@ -82,6 +81,13 @@ void gpu_code(  float *real,
 	timer.Stop();
 	printf("done in %g ms.", timer.Elapsed());
 
+	printf("\n\t\td_spectra using filesize: \t%g MB.", sizeof(float2)*filesize/1024.0/1024);
+	printf("\n\t\td_coeff using filesize: \t%g MB.", sizeof(float)*filesize/1024.0/1024);
+	printf("\n\t\td_real using filesize: \t\t%g MB.", sizeof(float)*filesize/1024.0/1024);
+	printf("\n\t\td_img using filesize: \t\t%g MB.", sizeof(float)*filesize/1024.0/1024);
+	printf("\n\t\t----------------------\t\t-----------");
+	printf("\n\t\tTotal: \t\t\t\t%g MB.\n\n",sizeof(float)*(5.0*filesize)/1024/1024);
+	
 	// set to 0.0
 	printf("\nDevice memset...\t\t\t");
 		timer.Start();
@@ -120,7 +126,7 @@ void gpu_code(  float *real,
 		dim3 blockSize(nChannels/gridSize.y, 1, 1); 
 	
 		timer.Start();
-			Fir<<<gridSize, blockSize>>>(d_real + i*(maxgrid_x+1)*nChannels, d_img + i*(maxgrid_x-nTaps+1)*nChannels, d_coeff, nTaps, nChannels, d_spectra + i*maxgrid_x);
+			Fir<<<gridSize, blockSize>>>(d_real + i*(maxgrid_x)*nChannels, d_img + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, d_spectra + i*maxgrid_x*nChannels);
 		timer.Stop();
 		fir_time+=timer.Elapsed();
 	
@@ -134,26 +140,26 @@ void gpu_code(  float *real,
 		printf("\n%d \t\t %lf \t %i \t\t %g \t %g\n",grid_x, fir_time, nChannels/blocks_y, 
 													(3*nChannels*nTaps*sizeof(float)+nChannels*2*sizeof(float))*(nBlocks-nTaps+1)*1000/fir_time, 
 													(4*nTaps)*nChannels*(nBlocks-nTaps+1)*1000.0/fir_time);
-
+}
 //--------------- cuFFT ----------------------------
-/*
+
 	//Create fft Plan
 	cufftHandle plan;
 	cufftPlan1d(&plan, nChannels, CUFFT_C2C, nBlocks);
-
+	
 	//execute plan and copy back to host
-	printf("\n\ncuFFT plan...\t\t");
+	printf("\n\ncuFFT run..\t\t");
 		timer.Start();
 			cufftExecC2C(plan, (cufftComplex *)d_spectra, (cufftComplex *)d_spectra, CUFFT_FORWARD);
 		timer.Stop();
 		fft_time = timer.Elapsed();
 	printf("done in %g ms.\n\n", timer.Elapsed());
-
+	
 	//Destroy the cuFFT plan
 	cufftDestroy(plan);
 
-*/
-}
+
+
 //--------------- copy data back ----------------------------
 	printf("Copy data from device to host \t");
 	timer.Start();

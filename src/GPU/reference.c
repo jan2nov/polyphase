@@ -16,7 +16,7 @@ float reference_code(float2 *spectra_ref,
 	  for (int i = 0; i < nChannels; i++) {
 	    diff = spectra_ref[i + 7*nChannels + j*nChannels].x - spectra[j*nChannels + i].x;
 	      error_norm += diff * diff;
-	   //   if (diff != 0.0) printf("%i %g %g\n", i +j*nChannels  , spectra_ref[i + 7*nChannels+ j*nChannels ].x, spectra[j*nChannels + i].x);
+	      //if (diff != 0.0) printf("%i %g %g\n", i +j*nChannels  , spectra_ref[i + 7*nChannels+ j*nChannels ].x, spectra[j*nChannels + i].x);
 	      diff = spectra_ref[i + 7*nChannels + j*nChannels].y - spectra[j*nChannels + i].y;
 	      error_norm += diff * diff;
 	  }
@@ -77,7 +77,7 @@ void Fir_cpu(float *w_buffer,
 				tap=(*oldesttap+t)%(nTaps);
 				//printf("%d\n", tap);
 				for(int c=0; c < nChannels; c++){ 
-				  spectra[bl*nChannels+c].x += (coeff[t*nChannels+c]*w_buffer[tap*2*nChannels+c]);
+				  spectra[bl*nChannels+c].x += coeff[t*nChannels+c]*w_buffer[tap*2*nChannels+c];
 				  spectra[bl*nChannels+c].y += coeff[t*nChannels+c]*w_buffer[tap*2*nChannels+c+nChannels];
 				}
 			}

@@ -11,6 +11,7 @@
 
 #define checkCudaErrors(val) check( (val), #val, __FILE__, __LINE__)
 
+
 template<typename T>
 void check(T err, const char* const func, const char* const file, const int line) {
   if (err != cudaSuccess) {
@@ -19,6 +20,7 @@ void check(T err, const char* const func, const char* const file, const int line
     exit(1);
   }
 }
+
 
 template<typename T>
 void checkResultsExact(const T* const ref, const T* const gpu, size_t numElem) {

@@ -57,25 +57,14 @@ reference.o: reference.c
 
 clean:	
 	rm -f *.o *.~ main $(ANALYZE)
-
+	
 run:
-	./$(ANALYZE) 1 120 >>gpu_1.dat
-	./$(ANALYZE) 1 1200 >>gpu_1.dat
-	./$(ANALYZE) 1 6000 >>gpu_1.dat
-	./$(ANALYZE) 1 12000 >>gpu_1.dat
-	./$(ANALYZE) 1 60000 >>gpu_1.dat
-	./$(ANALYZE) 2 120 >>gpu_2.dat
-	./$(ANALYZE) 2 1200 >>gpu_2.dat
-	./$(ANALYZE) 2 6000 >>gpu_2.dat
-	./$(ANALYZE) 2 12000 >>gpu_2.dat
-	./$(ANALYZE) 2 60000 >>gpu_2.dat
-	./$(ANALYZE) 4 120 >>gpu_4.dat
-	./$(ANALYZE) 4 1200 >>gpu_4.dat
-	./$(ANALYZE) 4 6000 >>gpu_4.dat
-	./$(ANALYZE) 4 12000 >>gpu_4.dat
-	./$(ANALYZE) 4 60000 >>gpu_4.dat
-	./$(ANALYZE) 1 60000 >>gpu_th.dat
-	./$(ANALYZE) 2 60000 >>gpu_th.dat
-	./$(ANALYZE) 4 60000 >>gpu_th.dat
-	./$(ANALYZE) 8 60000 >>gpu_th.dat
-	./$(ANALYZE) 16 60000 >>gpu_th.dat
+	rm -f GPU-polyphase.dat
+	@printf '#num \t fir \t\t fir+fft \t bandwidth \t flops \t\t HtoD \t\t DtoH\n' > GPU-polyphase.dat
+	./$(ANALYZE) 2 10007
+	./$(ANALYZE) 2 15007
+	./$(ANALYZE) 2 20007
+	./$(ANALYZE) 2 30007
+	./$(ANALYZE) 2 40007
+	./$(ANALYZE) 2 50007
+	./$(ANALYZE) 2 60007
