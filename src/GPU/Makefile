@@ -20,7 +20,7 @@ NVCC = nvcc
 # name of executables file
 ANALYZE = analyze.x
 STREAM = stream.x
-FILE = "../../data_results/gpu_perf.dat"
+FILE = "../../data_results/gpu_perf-580.dat"
 
 ###############################################################
 # Basic flags for compilers, one for debug options
@@ -63,6 +63,7 @@ clean:
 	
 run:
 	rm -f GPU-polyphase.dat
+	mkdir logs
 	@printf '#num \t fir \t\t fir+fft \t bandwidth \t flops \t\t HtoD \t\t DtoH\n' > GPU-polyphase.dat
 	./$(ANALYZE) 2 10007 > ./logs/GPU-10.dt
 	./$(ANALYZE) 2 15007 > ./logs/GPU-15.dt

@@ -48,15 +48,15 @@ void gpu_code(  float *real,
   printf("\n\t\t-------------- GPU part -----------------");
   printf("\nThere are %d devices.", devCount);
 
-  for (int i = 0; i < devCount; i++){
-	cudaDeviceProp devProp;
-	device = 0;
-	checkCudaErrors(cudaGetDeviceProperties(&devProp,device));	
-	printf("\n\t Using device:\t\t\t%s\n", devProp.name);
-	printf("\n\t Max grid size:\t\t\t%d\n", devProp.maxGridSize[0]);
-	maxgrid_x = devProp.maxGridSize[0];
-	  }
-	checkCudaErrors(cudaSetDevice(device));
+	for (int i = 0; i < devCount; i++){
+		cudaDeviceProp devProp;
+		device = 0;
+		checkCudaErrors(cudaGetDeviceProperties(&devProp,device));	
+		printf("\n\t Using device:\t\t\t%s\n", devProp.name);
+		printf("\n\t Max grid size:\t\t\t%d\n", devProp.maxGridSize[0]);
+		maxgrid_x = devProp.maxGridSize[0];
+	}
+		checkCudaErrors(cudaSetDevice(device));
 	
 //------------ memory setup -------------------------------------
 	
