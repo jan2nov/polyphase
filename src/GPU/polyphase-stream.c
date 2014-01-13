@@ -1,6 +1,5 @@
 #include "timer.h"
 //#include "utils.h"
-#include "utils_file.h"
 #include "utils_cuda.h"
 #include "data.h"
 #include <stdio.h>
@@ -50,7 +49,9 @@ int main(int argc, char **argv){
 	if (debug) printf("done.");
 
 	if (debug) printf("\nLoad window coefficients...\t");
-	Load_window_data(h_coeff);
+	//Load_window_data(h_coeff);
+		for (int i = 0; i < nTaps*nChannels; i++)
+			h_coeff[i] = 1.0;
 	if (debug) printf("done.");
 
 

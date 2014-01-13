@@ -30,8 +30,6 @@ NVCCFLAGS = -O3 -fmad=false -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcom
 #NVCCFLAGS= -g -G -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcompiler -Wextra
 GCC_OPTS =-O3 -Wall -Wextra 
 
-
-
 all:	analyze stream
 
 main.o:	main.c
@@ -46,10 +44,10 @@ analyze: polyphase-analyze.o utils_cuda.h timer.h polyphase.o reference.o Makefi
 polyphase-analyze.o: polyphase-analyze.c  timer.h data.h
 	$(GCC) -c polyphase-analyze.c $(GCC_OPTS) $(INC)
 
-polyphase-stream.o: polyphase-stream.c utils_file.h timer.h data.h
+polyphase-stream.o: polyphase-stream.c timer.h data.h
 	$(GCC) -c polyphase-stream.c $(GCC_OPTS) $(INC)
 
-stream-test.o: stream-test.cu utils_cuda.h data.h timer.h
+stream-test.o: stream-test.cu utils_cuda.h utils_file.h data.h timer.h
 	$(NVCC) -c stream-test.cu $(NVCCFLAGS)
 
 polyphase.o: polyphase.cu utils_cuda.h utils_file.h data.h timer.h

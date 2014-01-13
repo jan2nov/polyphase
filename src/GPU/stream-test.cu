@@ -3,6 +3,7 @@
 #include <cufft.h>
 #include <string.h>
 #include "utils_cuda.h"
+#include "utils_file.h"
 //#include <cutil_inline.h>
 #include "data.h"
 #include "timer.h"
@@ -37,17 +38,19 @@ void gpu_code(  float *real,
 				unsigned int nBlocks, 
 				unsigned int filesize,
 				int blocks_y){
+					
+bool WRITE=true;
 //------------ initialize card -----------
 
   int devCount, device;
+  cudaDeviceProp devProp;
     
   checkCudaErrors(cudaGetDeviceCount(&devCount));
   printf("\n\t\t-------------- GPU part -----------------");
   printf("\nThere are %d devices.", devCount);
 
 	//get number of GPU available
-  for (int i = 0; i < devCount - 1; i++){
-	cudaDeviceProp devProp;
+  for (int i = 0; i < devCount; i++){
 	checkCudaErrors(cudaGetDeviceProperties(&devProp,i));	
 	printf("\n\t Using device:\t\t\t%s\n", devProp.name);
 	printf("\t Concurrent kernels:\t\t\t%i\n", devProp.concurrentKernels);
@@ -79,9 +82,9 @@ void gpu_code(  float *real,
 	int SegSize = (seg_blocks + nTaps - 1)*nChannels; //size of each segment in the buffer
 	int seg_offset = seg_blocks*nChannels;
 	printf("Number of spectra per block: \t%i\n", seg_blocks);
-	printf("Size of segment in bytes: \t%i\n", SegSize);
-	printf("Run_blocks: \t\t%i\n", run_blocks);
-	printf("Offset: \t\t%i\n", seg_offset);
+	printf("Size of segment in bytes: \t%lu\n", SegSize*sizeof(float));
+	printf("Run_blocks: \t\t\t%i\n", run_blocks);
+	printf("Offset: \t\t\t%i\n", seg_offset);
 	printf("-----------------------------------------\n");
 	
 	
@@ -93,9 +96,11 @@ void gpu_code(  float *real,
 	float  *d_real_1, *d_img_1; 
 	float2 *d_spectra_1;
 
-	float run_time = 0.0f;
-	float mem_time = 0.0f;
-	float ker_time = 0.0f;
+	float fir_time = 0.0f;
+	float fft_time = 0.0f;
+	float mem_time_in = 0.0f;
+	float mem_time_out = 0.0f;
+	
 
 	// grid and block size
 	//int grid_0 = (int)(seg_blocks/2);
@@ -112,15 +117,27 @@ void gpu_code(  float *real,
 	checkCudaErrors(cudaMalloc((void **) &d_real_1,    sizeof(float)*SegSize));
 	checkCudaErrors(cudaMalloc((void **) &d_img_1,     sizeof(float)*SegSize));
 	
+	printf("\n\t\td_spectra using filesize: \t%g MB.", 2*sizeof(float2)*SegSize/1024.0/1024);
+	printf("\n\t\td_coeff using filesize: \t%g MB.", sizeof(float)*SegSize/1024.0/1024);
+	printf("\n\t\td_real using filesize: \t\t%g MB.", 2*sizeof(float)*SegSize/1024.0/1024);
+	printf("\n\t\td_img using filesize: \t\t%g MB.", 2*sizeof(float)*SegSize/1024.0/1024);
+	printf("\n\t\t----------------------\t\t-----------");
+	printf("\n\t\tTotal: \t\t\t\t%g MB.\n\n",sizeof(float)*(9.0*SegSize)/1024/1024);
+	
 	//coefficients copy
 	checkCudaErrors(cudaMemcpy(d_coeff, coeff, nChannels*nTaps*sizeof(float), cudaMemcpyHostToDevice));
 
 	// set to 0.0
-
 	checkCudaErrors(cudaMemset(d_spectra_0, 0.0, sizeof(float2)*SegSize));
 	checkCudaErrors(cudaMemset(d_spectra_1, 0.0, sizeof(float2)*SegSize));
 
-	// copy data to device
+	//Create fft Plan
+	cufftHandle plan0;
+	cufftHandle plan1;
+	cufftPlan1d(&plan0, nChannels, CUFFT_C2C, seg_blocks);
+	cufftPlan1d(&plan1, nChannels, CUFFT_C2C, seg_blocks);
+	cufftSetStream(plan0,stream0);
+	cufftSetStream(plan1,stream1);
 	
 	timer.Start();
 for (int i = 0; i < run_blocks; i+=seg_blocks*2){
@@ -133,28 +150,26 @@ for (int i = 0; i < run_blocks; i+=seg_blocks*2){
 		Fir<<<gridSize0, blockSize0, 0, stream0>>>(d_real_0, d_img_0, d_coeff, nTaps, nChannels, d_spectra_0);
 		Fir<<<gridSize0, blockSize0, 0, stream1>>>(d_real_1, d_img_1, d_coeff, nTaps, nChannels, d_spectra_1);
 
+		cufftExecC2C(plan0, (cufftComplex *)d_spectra_0, (cufftComplex *)d_spectra_0, CUFFT_FORWARD);
+		cufftExecC2C(plan1, (cufftComplex *)d_spectra_1, (cufftComplex *)d_spectra_1, CUFFT_FORWARD);
+		
 		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels, d_spectra_0, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream0));
 		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels + seg_offset, d_spectra_1, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream1));
+		
 }
 	timer.Stop();
-	run_time=timer.Elapsed();
-	printf("\nDone in %g ms.\n", run_time);
-//--------------- cuFFT ----------------------------
-/*
-	//Create fft Plan
-	cufftHandle plan;
-	cufftPlan1d(&plan, nChannels, CUFFT_C2C, nBlocks);
+	fir_time=timer.Elapsed();
+	printf("\nDone in %g ms.\n", fir_time);
 
-	//execute plan and copy back to host
-	printf("\n\ncuFFT plan...\t\t");
-	timer.Start();
-	cufftExecC2C(plan, (cufftComplex *)d_spectra, (cufftComplex *)d_spectra, CUFFT_FORWARD);
-	timer.Stop();
-	printf("done in %g ms.\n\n", timer.Elapsed());
+//---------------- write to file process ----------------------
 
-	//Destroy the cuFFT plan
-	cufftDestroy(plan);
-*/
+	char str[200];
+	sprintf(str,"GPU-stream-%s.dat",devProp.name);
+	
+		printf("\n Write results into file...\t");
+		if (WRITE) save_time(str, nBlocks-nTaps+1, fir_time, fft_time, mem_time_in, mem_time_out, nChannels, nTaps);
+		printf("\t done.\n-------------------------------------\n");
+
 
 //--------------- clean-up process ----------------------------
 	checkCudaErrors(cudaFree(d_spectra_0));
@@ -164,7 +179,10 @@ for (int i = 0; i < run_blocks; i+=seg_blocks*2){
 	checkCudaErrors(cudaFree(d_real_1));
 	checkCudaErrors(cudaFree(d_img_1));
 	checkCudaErrors(cudaFree(d_coeff));
-	
+
+	cufftDestroy(plan0);
+	cufftDestroy(plan1);
+
 	checkCudaErrors(cudaStreamDestroy(stream0));
 	checkCudaErrors(cudaStreamDestroy(stream1));
 
