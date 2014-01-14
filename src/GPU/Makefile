@@ -70,6 +70,8 @@ run:
 	./$(ANALYZE) 2 40007 > ./logs/GPU-40.dt
 	./$(ANALYZE) 2 50007 > ./logs/GPU-50.dt
 	./$(ANALYZE) 2 60007 > ./logs/GPU-60.dt
+	./$(ANALYZE) 2 120007 > ./logs/GPU-120.dt
+	./$(ANALYZE) 2 240007 > ./logs/GPU-240.dt
 	@mv -f GPU-polyphase.dat $(FILE)
 
 help:
