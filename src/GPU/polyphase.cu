@@ -74,14 +74,14 @@ void gpu_code(  float *real,
 	//malloc
 	printf("\nDevice memory allocation...\t\t");
 	timer.Start();
-	checkCudaErrors(cudaMalloc((void **) &d_spectra, sizeof(float2)*filesize));
+	checkCudaErrors(cudaMalloc((void **) &d_spectra, sizeof(float2)*(filesize)));
 	checkCudaErrors(cudaMalloc((void **) &d_coeff,   sizeof(float)*nChannels*nTaps));
 	checkCudaErrors(cudaMalloc((void **) &d_real,    sizeof(float)*filesize));
 	checkCudaErrors(cudaMalloc((void **) &d_img,     sizeof(float)*filesize));
 	timer.Stop();
 	printf("done in %g ms.", timer.Elapsed());
 
-	printf("\n\t\td_spectra using filesize: \t%g MB.", sizeof(float2)*filesize/1024.0/1024);
+	printf("\n\t\td_spectra using filesize: \t%g MB.", sizeof(float2)*(filesize)/1024.0/1024);
 	printf("\n\t\td_coeff using filesize: \t%g MB.", sizeof(float)*filesize/1024.0/1024);
 	printf("\n\t\td_real using filesize: \t\t%g MB.", sizeof(float)*filesize/1024.0/1024);
 	printf("\n\t\td_img using filesize: \t\t%g MB.", sizeof(float)*filesize/1024.0/1024);
@@ -91,7 +91,7 @@ void gpu_code(  float *real,
 	// set to 0.0
 	printf("\nDevice memset...\t\t\t");
 		timer.Start();
-			checkCudaErrors(cudaMemset(d_spectra, 0.0, sizeof(float2)*filesize));
+			checkCudaErrors(cudaMemset(d_spectra, 0.0, sizeof(float2)*(filesize)));
 		timer.Stop();
 	printf("done in %g ms.", timer.Elapsed());
 
@@ -142,7 +142,7 @@ void gpu_code(  float *real,
 													(4*nTaps)*nChannels*(nBlocks-nTaps+1)*1000.0/fir_time);
 }
 //--------------- cuFFT ----------------------------
-
+/*
 	//Create fft Plan
 	cufftHandle plan;
 	cufftPlan1d(&plan, nChannels, CUFFT_C2C, nBlocks);
@@ -157,13 +157,13 @@ void gpu_code(  float *real,
 	
 	//Destroy the cuFFT plan
 	cufftDestroy(plan);
-
+*/
 
 
 //--------------- copy data back ----------------------------
 	printf("Copy data from device to host \t");
 	timer.Start();
-		checkCudaErrors(cudaMemcpy(spectra,d_spectra,filesize*sizeof(float2), cudaMemcpyDeviceToHost));	
+		checkCudaErrors(cudaMemcpy(spectra,d_spectra,(filesize)*sizeof(float2), cudaMemcpyDeviceToHost));	
 	timer.Stop();
 	printf("done in %g ms.\n", timer.Elapsed());
 	mem_time_out=timer.Elapsed();

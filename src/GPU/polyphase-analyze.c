@@ -17,7 +17,7 @@ float reference_code(float2 *spectra_ref, float2 *spectra, int nChannels, unsign
 int main(int argc, char **argv){
 	
 	int NUM_BLOCKS = 1;
-	unsigned int data_size = 512512;
+	unsigned int data_size = 1007;
 	unsigned int nBlocks = 0;
 	float error = 1.1f;
 	bool debug=true;
@@ -28,22 +28,22 @@ int main(int argc, char **argv){
 	float *h_coeff, *h_real, *h_img;
 
 	if (argc >= 2) NUM_BLOCKS = atof(argv[1]);
-	if (argc >= 3) data_size  = atof(argv[2])*nChannels;
+	if (argc >= 3) data_size  = (atof(argv[2]))*nChannels;
 
-	nBlocks = data_size/nChannels;
+	nBlocks = (data_size+nTaps-1)/nChannels;
 
 	if (debug) printf("\nHost memory allocation...\t");
 	h_signal 	= (Complex *)malloc(data_size*sizeof(Complex));
 	h_real	 	= (float *)malloc(data_size*sizeof(float));
 	h_img	 	= (float *)malloc(data_size*sizeof(float));
-	h_spectra 	= (Complex *)malloc(data_size*sizeof(Complex));
-	h_spectra_ref = (Complex *)malloc(data_size*sizeof(Complex));
+	h_spectra 	= (Complex *)malloc((data_size)*sizeof(Complex));
+	h_spectra_ref = (Complex *)malloc((data_size)*sizeof(Complex));
 	h_coeff 	= (float *)malloc(nTaps*nChannels*sizeof(float));
 	if (debug) printf("done.");
 
 	if (debug) printf("\nHost memory memset...\t\t");
-	memset(h_spectra, 0.0, sizeof(Complex)*data_size);	
-	memset(h_spectra_ref, 0.0, sizeof(Complex)*data_size);	
+	memset(h_spectra, 0.0, sizeof(Complex)*(data_size));	
+	memset(h_spectra_ref, 0.0, sizeof(Complex)*(data_size));	
 	if (debug) printf("done.");
 
 	if (debug) printf("\nLoad window coefficients...\t");
