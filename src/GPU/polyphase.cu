@@ -48,7 +48,7 @@ void gpu_code(  float *real,
   printf("\n\t\t-------------- GPU part -----------------");
   printf("\nThere are %d devices.", devCount);
 
-	for (int i = 0; i < devCount; i++){
+	for (int i = 0; i < devCount-3; i++){
 		cudaDeviceProp devProp;
 		device = 0;
 		checkCudaErrors(cudaGetDeviceProperties(&devProp,device));	
