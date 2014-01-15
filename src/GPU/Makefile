@@ -20,7 +20,7 @@ NVCC = nvcc
 # name of executables file
 ANALYZE = analyze.x
 STREAM = stream.x
-FILE = "../../data_results/gpu_perf-580.dat"
+FILE = "../../data_results/gpu_perf-C2070.dat"
 
 ###############################################################
 # Basic flags for compilers, one for debug options
