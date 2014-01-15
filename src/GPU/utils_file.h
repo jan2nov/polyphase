@@ -60,10 +60,10 @@ bool Load_window_data(float *coeff){
 bool save_time(char str[], int num_blocks, float fir_time, float fft_time, float mem_time_in, float mem_time_out, const int nChannels, const int nTaps){
 	ofstream FILEOUT;
 	FILEOUT.open (str, std::ofstream::out | std::ofstream::app);
-	float flops = 0.0f; 
-	float bandwidth = 0.0f;
-	flops = (3*nChannels*nTaps*sizeof(float)+nChannels*2*sizeof(float))*(num_blocks)*1000/fir_time;
-	bandwidth = (4*nTaps)*nChannels*(num_blocks)*1000.0/fir_time;
+	double flops = 0.0f; 
+	double bandwidth = 0.0f;
+	flops = (3.0*nChannels*nTaps*sizeof(float)+nChannels*2*sizeof(float))*(num_blocks)*1000/fir_time;
+	bandwidth = (4.0*nTaps)*nChannels*(num_blocks)*1000.0/fir_time;
 	//------------------
 		FILEOUT << std::fixed << std::setprecision(8) << num_blocks << "\t" << fir_time/1000 << "\t" << (fir_time+fft_time)/1000 << "\t" << std::scientific << flops << "\t" << bandwidth << "\t" << std::fixed << mem_time_in/1000  << "\t" << mem_time_out/1000  << endl;
 	FILEOUT.close();
