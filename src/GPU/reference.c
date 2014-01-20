@@ -14,10 +14,10 @@ float reference_code(float2 *spectra_ref,
 	float diff = 0.0f, error_norm = 0.0f;
 	for (int j = 0; j < (int)nBlocks - (int)nTaps + 1; j++){
 	  for (int i = 0; i < nChannels; i++) {
-	    diff = spectra_ref[i + 7*nChannels + j*nChannels].x - spectra[j*nChannels + i].x;
+	    diff = spectra_ref[i + (nTaps-1)*nChannels + j*nChannels].x - spectra[j*nChannels + i].x;
 	      error_norm += diff * diff;
 	      //if (diff != 0.0) printf("%i %g %g\n", i +j*nChannels  , spectra_ref[i + 7*nChannels+ j*nChannels ].x, spectra[j*nChannels + i].x);
-	      diff = spectra_ref[i + 7*nChannels + j*nChannels].y - spectra[j*nChannels + i].y;
+	      diff = spectra_ref[i + (nTaps-1)*nChannels + j*nChannels].y - spectra[j*nChannels + i].y;
 	      error_norm += diff * diff;
 	  }
 	}
@@ -98,7 +98,7 @@ void  reference_calculation(float2 *inputVals,
 
 	Setup_buffer(w_buffer, inputVals, &oldesttap, nChannels, nTaps);
 	Fir_cpu(w_buffer, inputVals, &oldesttap, nChannels, nTaps, nBlocks, coeff, outputVals);
-/*
+
 		fftwf_plan p;
 		fftwf_complex *in, *out;
 
@@ -124,6 +124,6 @@ void  reference_calculation(float2 *inputVals,
 
 	fftwf_destroy_plan(p);
 	fftwf_free(in);
-	fftwf_free(out);*/
+	fftwf_free(out);
 	delete[] w_buffer;
 }
