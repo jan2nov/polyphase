@@ -38,7 +38,8 @@ void gpu_code(  float *real,
 				unsigned int nBlocks, 
 				unsigned int filesize,
 				int blocks_y, 
-				int nTaps){
+				int nTaps, 
+				int seg_blocks){
 					
 bool WRITE=true;
 //------------ initialize card -----------
@@ -78,7 +79,7 @@ bool WRITE=true;
 
 //------------ memory setup -------------------------------------
 	float *d_coeff;
-	int seg_blocks = 5000; // each segment compute # of spectra
+	//int seg_blocks = 10000; // each segment compute # of spectra
 	int run_blocks = nBlocks - nTaps + 1; // needed blocks for run on whole host data
 	int SegSize = (seg_blocks + nTaps - 1)*nChannels; //size of each segment in the buffer
 	int seg_offset = seg_blocks*nChannels;

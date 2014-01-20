@@ -74,7 +74,7 @@ void Fir_cpu(float *w_buffer,
 	for(int bl=nTaps - 1; bl < nBlocks; bl++){
 		Update_buffer(w_buffer, &data[bl*nChannels], oldesttap, nChannels, nTaps);
 			for(int t=0; t<nTaps; t++){
-				tap=(*oldesttap+t)%(nTaps);
+				tap=(*oldesttap+t)%(nTaps);	
 				//printf("%d\n", tap);
 				for(int c=0; c < nChannels; c++){ 
 				  spectra[bl*nChannels+c].x += coeff[t*nChannels+c]*w_buffer[tap*2*nChannels+c];
