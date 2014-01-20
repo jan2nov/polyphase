@@ -34,7 +34,7 @@ int main(int argc, char **argv){
 	if (argc >= 3) data_size  = atof(argv[2])*nChannels;
 	if (argc >= 4) nTaps 	  = (atof(argv[3]));
 
-	nBlocks = data_size/nChannels;
+	nBlocks = (data_size+nTaps-1)/nChannels;nBlocks = data_size/nChannels;
 
 	if (debug) printf("\nHost memory allocation...\t");
 	checkCudaErrors(cudaMallocHost((void**)&h_spectra_pinned, data_size*sizeof(Complex)));
@@ -72,7 +72,7 @@ int main(int argc, char **argv){
 
 
 	if (debug) printf("\nReference calculation...\t");
-	reference_calculation(h_signal, h_spectra_ref, h_coeff, nChannels, nBlocks, nTaps);
+	//reference_calculation(h_signal, h_spectra_ref, h_coeff, nChannels, nBlocks, nTaps);
 	if (debug) printf("done.\n");
 	
 	//printf("CPU jedna %g druha %g", h_spectra_ref[3584], h_spectra_ref[7*512 + 259999].x);
