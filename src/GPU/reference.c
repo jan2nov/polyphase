@@ -66,7 +66,7 @@ void Fir_cpu(float *w_buffer,
 	     int nChannels, 
 	     int nTaps, 
 	     int nBlocks, 
-             float *coeff, 
+         float *coeff, 
  	     float2 *spectra){
 
 	unsigned int tap = 0;
@@ -88,7 +88,8 @@ void  reference_calculation(float2 *inputVals,
 			    float2 *outputVals,
 			    float *coeff, 
 			    int nChannels, 
-			    unsigned int nBlocks){
+			    unsigned int nBlocks,
+			    int nTaps){
 
 	float *w_buffer;
 	unsigned int oldesttap;

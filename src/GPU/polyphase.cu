@@ -36,7 +36,8 @@ void gpu_code(  float *real,
 				const int nChannels,
 				unsigned int nBlocks, 
 				unsigned int filesize,
-				int blocks_y){
+				int blocks_y,
+				const int nTaps){
 
  bool WRITE=true;					
 //------------ initialize card -----------
@@ -72,7 +73,7 @@ void gpu_code(  float *real,
 	float mem_time_out = 0.0f;
 
 	//malloc
-	printf("\nDevice memory allocation...\t\t");
+	printf("\nDevice memory allocation...: \t\t");
 	timer.Start();
 	checkCudaErrors(cudaMalloc((void **) &d_spectra, sizeof(float2)*(filesize)));
 	checkCudaErrors(cudaMalloc((void **) &d_coeff,   sizeof(float)*nChannels*nTaps));
@@ -107,13 +108,13 @@ void gpu_code(  float *real,
 	printf("done in %g ms.\n", mem_time_in);
 
 	//--------------- Fir ----------------------------
-		
-	int run_blocks = nBlocks - nTaps + 1; 
+	
+	printf("\n\t\t------------ Kernel run-----------------");		
+	int run_blocks = (int)(nBlocks - nTaps + 1); 
 	int grid_x;
 	int n_cycle = run_blocks/maxgrid_x + 1;
-	printf("n_cycle : %d \n", n_cycle);
+	printf("n_cycle : %d \t nTaps: %d\n", n_cycle, nTaps);
 
-	printf("\n\t\t------------ Kernel run-----------------");
 	for (int i = 0; i < n_cycle; i++){
 		
 		if (maxgrid_x < run_blocks){
