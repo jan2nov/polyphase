@@ -18,7 +18,7 @@ int main(int argc, char **argv){
 	
 	int nTaps = 8;
 	int NUM_BLOCKS = 1;
-	unsigned int data_size = 10007;
+	unsigned int data_size = 10000+nTaps-1;
 	unsigned int nBlocks = 0;
 	float error = 1.1f;
 	bool debug=true;
@@ -29,10 +29,10 @@ int main(int argc, char **argv){
 	float *h_coeff, *h_real, *h_img;
 
 	if (argc >= 2) NUM_BLOCKS = atof(argv[1]);
-	if (argc >= 3) data_size  = (atof(argv[2]))*nChannels;
-	if (argc >= 4) nTaps 	  = (atof(argv[3]));
+	if (argc >= 3) nTaps 	  = (atof(argv[2]));
+	if (argc >= 4) data_size  = (atof(argv[3])+nTaps-1)*nChannels;
 
-	nBlocks = (data_size+nTaps-1)/nChannels;
+	nBlocks = (data_size)/nChannels;
 
 	if (debug) printf("\nHost memory allocation...\t");
 	h_signal 	= (Complex *)malloc(data_size*sizeof(Complex));

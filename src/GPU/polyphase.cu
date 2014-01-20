@@ -109,7 +109,7 @@ void gpu_code(  float *real,
 
 	//--------------- Fir ----------------------------
 	
-	printf("\n\t\t------------ Kernel run-----------------");		
+	printf("\n\t\t------------ Kernel run-----------------\n");		
 	int run_blocks = (int)(nBlocks - nTaps + 1); 
 	int grid_x;
 	int n_cycle = run_blocks/maxgrid_x + 1;
