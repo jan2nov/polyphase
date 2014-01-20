@@ -1,0 +1,9 @@
+// setup data for whole project
+
+<<<<<<< HEAD
+const int nTaps = 8;
+const int nChannels = 6000000;
+=======
+const int nChannels = 512;
+>>>>>>> 4be816942e7726592193401ed298fae4c0fe1274
+

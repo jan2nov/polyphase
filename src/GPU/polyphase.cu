@@ -51,7 +51,7 @@ void gpu_code(  float *real,
 
 	for (int i = 0; i < devCount; i++){
 		cudaDeviceProp devProp;
-		device = 0;
+		device = 1;
 		checkCudaErrors(cudaGetDeviceProperties(&devProp,device));	
 		printf("\n\t Using device:\t\t\t%s\n", devProp.name);
 		printf("\n\t Max grid size:\t\t\t%d\n", devProp.maxGridSize[0]);

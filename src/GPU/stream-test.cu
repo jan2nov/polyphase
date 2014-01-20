@@ -57,7 +57,7 @@ bool WRITE=true;
 	printf("\n\t Using device:\t\t\t%s\n", devProp.name);
 	printf("\t Concurrent kernels:\t\t\t%i\n", devProp.concurrentKernels);
 	printf("\t Async Engine Count:\t\t\t%i\n", devProp.asyncEngineCount);
-	device = 0;
+	device = 1;
 	// set some preferable card
 	checkCudaErrors(cudaSetDevice(device));
   }
