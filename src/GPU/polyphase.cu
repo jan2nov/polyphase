@@ -48,9 +48,9 @@ void gpu_code(  float *real,
   printf("\n\t\t-------------- GPU part -----------------");
   printf("\nThere are %d devices.", devCount);
 
-	for (int i = 0; i < devCount-3; i++){
+	for (int i = 0; i < devCount-1; i++){
 		cudaDeviceProp devProp;
-		device = 0;
+		device = 1;
 		checkCudaErrors(cudaGetDeviceProperties(&devProp,device));	
 		printf("\n\t Using device:\t\t\t%s\n", devProp.name);
 		printf("\n\t Max grid size:\t\t\t%d\n", devProp.maxGridSize[0]);
@@ -157,8 +157,8 @@ void gpu_code(  float *real,
 	
 	//Destroy the cuFFT plan
 	cufftDestroy(plan);
-*/
 
+*/
 
 //--------------- copy data back ----------------------------
 	printf("Copy data from device to host \t");

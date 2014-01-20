@@ -23,7 +23,8 @@ set key top left
 set logscale x
 set grid
 plot 'dataZen/SSE42_pwi4_perf.dat' using 1:3 w lines lt -1 lw 3 lc rgb 'black' title 'Parallel with intrinsic XEON 5650 (SSE4.2)'\
-,'dataZen/AVX_pwi4_perf.dat' using 1:3 w lines lt -1 lw 3 lc rgb 'red' title 'Parallel with intrinsic XEON E5-2650 (AVX)'
+,'dataZen/AVX_pwi4_perf.dat' using 1:3 w lines lt -1 lw 3 lc rgb 'red' title 'Parallel with intrinsic XEON E5-2650 (AVX)'\
+,'dataZen/gpu_perf-gtx480-all.dat' using 1:2 w lines lt -1 lw 3 lc rgb 'navyblue' title 'Cache kernel without stream on GTX 480'
 reset;
 
 
