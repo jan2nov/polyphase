@@ -66,7 +66,7 @@ void Fir_cpu(float *w_buffer,
 	     int nChannels, 
 	     int nTaps, 
 	     int nBlocks, 
-             float *coeff, 
+         float *coeff, 
  	     float2 *spectra){
 
 	unsigned int tap = 0;
@@ -88,7 +88,8 @@ void  reference_calculation(float2 *inputVals,
 			    float2 *outputVals,
 			    float *coeff, 
 			    int nChannels, 
-			    unsigned int nBlocks){
+			    unsigned int nBlocks,
+			    int nTaps){
 
 	float *w_buffer;
 	unsigned int oldesttap;
@@ -97,8 +98,8 @@ void  reference_calculation(float2 *inputVals,
 
 	Setup_buffer(w_buffer, inputVals, &oldesttap, nChannels, nTaps);
 	Fir_cpu(w_buffer, inputVals, &oldesttap, nChannels, nTaps, nBlocks, coeff, outputVals);
-
-/*		fftwf_plan p;
+/*
+		fftwf_plan p;
 		fftwf_complex *in, *out;
 
 		in = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * nChannels);

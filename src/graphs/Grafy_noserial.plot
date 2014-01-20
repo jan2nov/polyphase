@@ -8,8 +8,9 @@ set logscale x
 set grid
 plot 'dataZen/SSE42_pwi4_perf.dat' using 1:2 w lines lt -1 lw 3 lc rgb 'black' title 'Parallel with intrinsic XEON 5650 (SSE4.2)'\
 ,'dataZen/AVX_pwi4_perf.dat' using 1:2 w lines lt -1 lw 3 lc rgb 'red' title 'Parallel with intrinsic XEON E5-2650 (AVX)'\
-,'dataZen/gpu_perf-k20m.dat' using 1:2 w lines lt -1 lw 3 lc rgb '#32CD32' title 'Cache kernel without stream on Tesla k20m'\
-,'dataZen/gpu_perf-480.dat' using 1:2 w lines lt -1 lw 3 lc rgb 'navyblue' title 'Cache kernel without stream on GTX 480'
+,'dataZen/gpu_perf-k20m.dat' using 1:2 w lines lt -1 lw 3 lc rgb '#32cd32' title 'Cache kernel without stream on Tesla k20m'\
+,'dataZen/gpu_perf-480.dat' using 1:2 w lines lt -1 lw 3 lc rgb 'navyblue' title 'Cache kernel without stream on GTX 480'\
+,'dataZen/xeon_phi.dat' using 1:2 w lines lt -1 lw 3 lc rgb '#4877d2' title 'Xeon Phi'
 reset;
 
 
@@ -44,7 +45,8 @@ set grid
 plot 'dataZen/SSE42_pwi4_perf.dat' using 1:4 w lines lt -1 lw 3 lc rgb 'black' title 'Parallel with intrinsic XEON 5650 (SSE4.2)'\
 ,'dataZen/AVX_pwi4_perf.dat' using 1:4 w lines lt -1 lw 3 lc rgb 'red' title 'Parallel with intrinsic XEON E5-2650 (AVX)'\
 ,'dataZen/gpu_perf-k20m.dat' using 1:4 w lines lt -1 lw 3 lc rgb '#32CD32' title 'Cache kernel without stream on Tesla k20m'\
-,'dataZen/gpu_perf-480.dat' using 1:4 w lines lt -1 lw 3 lc rgb 'navyblue' title 'Cache kernel without stream on GTX 480'
+,'dataZen/gpu_perf-480.dat' using 1:4 w lines lt -1 lw 3 lc rgb 'navyblue' title 'Cache kernel without stream on GTX 480'\
+,'dataZen/xeon_phi.dat' using 1:4 w lines lt -1 lw 3 lc rgb '#4877d2' title 'Xeon Phi'
 reset;
 
 
@@ -64,7 +66,8 @@ set grid
 plot 'dataZen/SSE42_pwi4_perf.dat' using 1:5 w lines lt -1 lw 3 lc rgb 'black' title 'Parallel with intrinsic XEON 5650 (SSE4.2)'\
 ,'dataZen/AVX_pwi4_perf.dat' using 1:5 w lines lt -1 lw 3 lc rgb 'red' title 'Parallel with intrinsic XEON E5-2650 (AVX)'\
 ,'dataZen/gpu_perf-k20m.dat' using 1:5 w lines lt -1 lw 3 lc rgb '#32CD32' title 'Cache kernel without stream on Tesla k20m'\
-,'dataZen/gpu_perf-480.dat' using 1:5 w lines lt -1 lw 3 lc rgb 'navyblue' title 'Cache kernel without stream on GTX 480'
+,'dataZen/gpu_perf-480.dat' using 1:5 w lines lt -1 lw 3 lc rgb 'navyblue' title 'Cache kernel without stream on GTX 480'\
+,'dataZen/xeon_phi.dat' using 1:5 w lines lt -1 lw 3 lc rgb '#4877d2' title 'Xeon Phi'
 reset;
 
 

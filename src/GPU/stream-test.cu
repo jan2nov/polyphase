@@ -37,7 +37,8 @@ void gpu_code(  float *real,
 				const int nChannels,
 				unsigned int nBlocks, 
 				unsigned int filesize,
-				int blocks_y){
+				int blocks_y, 
+				int nTaps){
 					
 bool WRITE=true;
 //------------ initialize card -----------
