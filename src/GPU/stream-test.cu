@@ -151,14 +151,13 @@ for (int i = 0; i < run_blocks; i+=seg_blocks*2){
 
 		Fir<<<gridSize0, blockSize0, 0, stream0>>>(d_real_0, d_img_0, d_coeff, nTaps, nChannels, d_spectra_0);
 		cufftExecC2C(plan0, (cufftComplex *)d_spectra_0, (cufftComplex *)d_spectra_0, CUFFT_FORWARD);
+		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels, d_spectra_0, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream0));
 
 		Fir<<<gridSize0, blockSize0, 0, stream1>>>(d_real_1, d_img_1, d_coeff, nTaps, nChannels, d_spectra_1);
 		cufftExecC2C(plan1, (cufftComplex *)d_spectra_1, (cufftComplex *)d_spectra_1, CUFFT_FORWARD);
-		
-		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels, d_spectra_0, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream0));
 		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels + seg_offset, d_spectra_1, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream1));
-		
 }
+
 	timer.Stop();
 	fir_time=timer.Elapsed();
 	printf("\nDone in %g ms.\n", fir_time);
