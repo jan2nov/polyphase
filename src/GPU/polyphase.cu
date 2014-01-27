@@ -8,6 +8,8 @@
 #include "data.h"
 #include "timer.h"
 
+__constant__ float C_coeff[4096];
+
 __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coeff, const int nTaps, const int nChannels, float2 *spectra)
 {
 	int tx = threadIdx.x + blockDim.x*blockIdx.y;
@@ -20,8 +22,8 @@ __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coef
 	  i = t*nChannels;
 	  i_coeff = i + tx;
 	  i_data = i + index;
-	  local_spectra_x += coeff[i_coeff]*d_signal_real[i_data];
-	  local_spectra_y += coeff[i_coeff]*d_signal_img[i_data];
+	  local_spectra_x += C_coeff[i_data]*d_signal_real[i_data];
+	 // local_spectra_y += C_coeff[i_coeff]*d_signal_img[i_data];
 	}
 		
 	spectra[index].x=local_spectra_x;
@@ -100,7 +102,7 @@ void gpu_code(  float *real,
 	printf("\nCopy data from host to device...\t");
 		timer.Start();
 			checkCudaErrors(cudaMemcpy(d_coeff, coeff, nChannels*nTaps*sizeof(float), cudaMemcpyHostToDevice));
-			//checkCudaErrors(cudaMemcpyToSymbol(C_coeff,  coeff,   sizeof(float)*nChannels*nTaps));
+			checkCudaErrors(cudaMemcpyToSymbol(C_coeff,  coeff,   sizeof(float)*nChannels*nTaps));
 			checkCudaErrors(cudaMemcpy(d_real, real, filesize*sizeof(float), cudaMemcpyHostToDevice));
 			checkCudaErrors(cudaMemcpy(d_img,  img,  filesize*sizeof(float), cudaMemcpyHostToDevice));
 		timer.Stop();
@@ -133,7 +135,7 @@ void gpu_code(  float *real,
 	
 		//----- error check -----
 			checkCudaErrors(cudaGetLastError());
-			checkCudaErrors(cudaDeviceSynchronize());
+			//checkCudaErrors(cudaDeviceSynchronize());
 		//-----------------------
 	
 		printf("\nFir kernel %d\n", i);
