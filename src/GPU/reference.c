@@ -11,7 +11,7 @@ float reference_code(float2 *spectra_ref,
 		     unsigned int nTaps, 
 		     unsigned int nBlocks){
 
-	float diff = 0.0f, error_norm = 0.0f;
+	double diff = 0.0f, error_norm = 0.0f;
 	for (int j = 0; j < (int)nBlocks - (int)nTaps + 1; j++){
 	  for (int i = 0; i < nChannels; i++) {
 	    diff = spectra_ref[i + (nTaps-1)*nChannels + j*nChannels].x - spectra[j*nChannels + i].x;
