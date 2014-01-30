@@ -1,0 +1,132 @@
+###############################################################
+# Makefile for Artemis project -- Polyphase filter
+# created by JaN
+# contact: jan.novotny@fpf.slu.cz, karel.adamek@fpf.slu.cz
+###############################################################
+
+###############################################################
+# CUDA_HOME are supposed to be on default position
+# and set it in your PATH .bashrc
+###############################################################
+SDK := /home/novotny/NVIDIA_GPU_Computing_SDK/CUDALibraries/common/inc/
+INC := -I$(CUDA_HOME)/include #-I$(SDK)
+LIB := -L$(CUDA_HOME)/lib64 -lcudart -lcufft -lcuda
+
+# use this compilers
+# g++ just because the file write
+GCC = g++
+NVCC = nvcc
+
+# name of executables file
+ANALYZE = analyze.x
+ANALYZE2 = analyze-ldg.x
+ANALYZE3 = analyze-noprefer_l1.x
+STREAM = stream.x
+FILE = "../../data_results/gpu_perf-k20-all.dat"
+FILE2 = "../../data_results/gpu_perf-k20ldg-all.dat"
+FILE3 = "../../data_results/gpu_perf-k20_nol1-all.dat"
+FILE4 = "../../data_results/gpu_perf-k20-threads.dat"
+FILE5 = "../../data_results/gpu_perf-k20-taps.dat"
+
+
+###############################################################
+# Basic flags for compilers, one for debug options
+# fmad flags used for reason of floating point operation
+###############################################################
+NVCCFLAGS = -Xcompiler -O3 -arch=sm_35 --ptxas-options=-v --use_fast_math --fmad=false
+#NVCCFLAGS= -g -G -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcompiler -Wextra
+GCC_OPTS =-O3 -Wall -Wextra 
+
+all:	analyze stream
+
+main.o:	main.c
+	$(GCC) -c main.c $(GCC_OPTS) $(INC)
+
+stream: polyphase-stream.o utils_cuda.h timer.h stream-test.o reference.o Makefile
+	$(NVCC) -o $(STREAM) polyphase-stream.o stream-test.o reference.o $(LIB) $(NVCCFLAGS)
+
+analyze: polyphase-analyze.o utils_cuda.h timer.h polyphase.o reference.o Makefile
+	$(NVCC) -o $(ANALYZE) polyphase-analyze.o polyphase.o reference.o $(LIB) $(NVCCFLAGS)
+
+polyphase-analyze.o: polyphase-analyze.c  timer.h data.h
+	$(GCC) -c polyphase-analyze.c $(GCC_OPTS) $(INC)
+
+polyphase-stream.o: polyphase-stream.c timer.h data.h
+	$(GCC) -c polyphase-stream.c $(GCC_OPTS) $(INC)
+
+stream-test.o: stream-test.cu utils_cuda.h utils_file.h data.h timer.h
+	$(NVCC) -c stream-test.cu $(NVCCFLAGS)
+
+polyphase.o: polyphase.cu utils_cuda.h utils_file.h data.h timer.h
+	$(NVCC) -c polyphase.cu $(NVCCFLAGS)
+
+reference.o: reference.c
+	$(GCC) -c reference.c $(GCC_OPTS) $(INC)
+
+clean:	
+	rm -f *.o *.~ main $(ANALYZE)
+
+run:
+	rm -f GPU-polyphase.dat
+	mkdir -p logs
+	@printf '#num \t fir \t\t fir+fft \t bandwidth \t flops \t\t HtoD \t\t DtoH\n' > GPU-polyphase.dat
+	./$(ANALYZE) 1 256 8 15000 > ./logs/GPU-15.dt
+	./$(ANALYZE) 1 256 8 20000 > ./logs/GPU-20.dt
+	./$(ANALYZE) 1 256 8 30000 > ./logs/GPU-30.dt
+	./$(ANALYZE) 1 256 8 40000 > ./logs/GPU-40.dt
+	./$(ANALYZE) 1 256 8 50000 > ./logs/GPU-50.dt
+	./$(ANALYZE) 1 256 8 60000 > ./logs/GPU-60.dt
+	./$(ANALYZE) 1 256 8 120000 > ./logs/GPU-120.dt
+	./$(ANALYZE) 1 256 8 240000 > ./logs/GPU-240.dt
+	@mv -f GPU-polyphase.dat $(FILE)
+	./$(ANALYZE2) 1 256 8 15000 > ./logs/GPU2-15.dt
+	./$(ANALYZE2) 1 256 8 20000 > ./logs/GPU2-20.dt
+	./$(ANALYZE2) 1 256 8 30000 > ./logs/GPU2-30.dt
+	./$(ANALYZE2) 1 256 8 40000 > ./logs/GPU2-40.dt
+	./$(ANALYZE2) 1 256 8 50000 > ./logs/GPU2-50.dt
+	./$(ANALYZE2) 1 256 8 60000 > ./logs/GPU2-60.dt
+	./$(ANALYZE2) 1 256 8 120000 > ./logs/GPU2-120.dt
+	./$(ANALYZE2) 1 256 8 240000 > ./logs/GPU2-240.dt
+	@mv -f GPU-polyphase.dat $(FILE2)
+	./$(ANALYZE3) 1 256 8 15000 > ./logs/GPU3-15.dt
+	./$(ANALYZE3) 1 256 8 20000 > ./logs/GPU3-20.dt
+	./$(ANALYZE3) 1 256 8 30000 > ./logs/GPU3-30.dt
+	./$(ANALYZE3) 1 256 8 40000 > ./logs/GPU3-40.dt
+	./$(ANALYZE3) 1 256 8 50000 > ./logs/GPU3-50.dt
+	./$(ANALYZE3) 1 256 8 60000 > ./logs/GPU3-60.dt
+	./$(ANALYZE3) 1 256 8 120000 > ./logs/GPU3-120.dt
+	./$(ANALYZE3) 1 256 8 240000 > ./logs/GPU3-240.dt
+	@mv -f GPU-polyphase.dat $(FILE3)
+	./$(ANALYZE2) 1 64 8 60000 > ./logs/GPU4-15.dt
+	./$(ANALYZE2) 1 128 8 60000 > ./logs/GPU4-20.dt
+	./$(ANALYZE2) 1 192 8 60000 > ./logs/GPU4-30.dt
+	./$(ANALYZE2) 1 256 8 60000 > ./logs/GPU4-40.dt
+	./$(ANALYZE2) 1 320 8 60000 > ./logs/GPU4-50.dt
+	./$(ANALYZE2) 1 384 8 60000 > ./logs/GPU4-60.dt
+	./$(ANALYZE2) 1 448 8 60000 > ./logs/GPU4-120.dt
+	./$(ANALYZE2) 1 512 8 60000 > ./logs/GPU4-240.dt
+	@mv -f GPU-polyphase.dat $(FILE4)
+	./$(ANALYZE2) 1 256 8 60000 > ./logs/GPU5-15.dt
+	./$(ANALYZE2) 1 256 12 60000 > ./logs/GPU5-20.dt
+	./$(ANALYZE2) 1 256 16 60000 > ./logs/GPU5-30.dt
+	./$(ANALYZE2) 1 256 20 60000 > ./logs/GPU5-40.dt
+	./$(ANALYZE2) 1 256 24 60000 > ./logs/GPU5-50.dt
+	@mv -f GPU-polyphase.dat $(FILE5)
+	./$(STREAM) 2 8 7500 15000 > ./logs/GPU6-15.dt
+	./$(STREAM) 2 8 10000 20000 > ./logs/GPU6-20.dt
+	./$(STREAM) 2 8 15000 30000 > ./logs/GPU6-30.dt
+	./$(STREAM) 2 8 20000 40000 > ./logs/GPU6-40.dt
+	./$(STREAM) 2 8 25000 50000 > ./logs/GPU6-50.dt
+	./$(STREAM) 2 8 30000 60000 > ./logs/GPU6-60.dt
+	./$(STREAM) 2 8 60000 120000 > ./logs/GPU6-120.dt
+	./$(STREAM) 2 8 60000 240000 > ./logs/GPU6-240.dt
+
+
+help:
+	@printf '\n\n-----------------------------------------------------\n'
+	@printf '\t\tWelcome, to the help\n\n'
+	@printf 'For compiling all type: \t\t make\n'
+	@printf 'For compiling analyze: \t\t\t make analyze\n'
+	@printf 'For compiling stream: \t\t\t make stream\n'
+	@printf 'To create data file with times: \t make run\n'
+	@printf '-----------------------------------------------------\n\n'
