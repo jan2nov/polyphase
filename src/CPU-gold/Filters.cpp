@@ -458,7 +458,6 @@ void FIR_para_INT_Mk4_256(float *input_data, float *spectra, float *coeff, int n
 				
 				for(t=0;t<nTaps;t++){
 					//Loading data
-					
 					i_coeff[0]=_mm256_load_ps(&coeff[(RpCl*c)*FpR+t*nChannels]);
 					i_coeff[1]=_mm256_load_ps(&coeff[(RpCl*c+1)*FpR+t*nChannels]);
 										
@@ -517,4 +516,73 @@ void FIR_serial_INT_Mk4_256(float *input_data, float *spectra, float *coeff, int
 				_mm256_stream_ps(&spectra[(RpCl*c+1)*FpR + bl*nChannels],i_spectra[1]);
 			}// nChannels
 		}// for nBlocks
+}
+
+
+//**************
+// PARALLEL CODE WITH INTRINSIC Mk4 BASED ON SERIAL Mk1 for architecture with register size = 128bit
+//**************
+//parallel version of the cache optimized code
+void FIR_para_INT_Mk6_256(float *input_data, float *spectra, float *coeff, int nTaps, int nChannels, int nBlocks,int nThreads){
+	//number of channels must by dividable by factor of 256
+	int i,c,t,bl,th_id,block_step;
+	int start,end;
+	nChannels=nChannels*2;
+	
+	//registers
+	int FpR=8,RpCl=2;
+	int REG=nChannels/(RpCl*FpR);
+	__m256 i_data[2];// because of the size of the cacheline 64byte
+	__m256 i_coeff[2];
+	__m256 i_spectra[2];
+	__m256 i_temp[2];
+	
+	// Outer for
+	// Inner for
+	int INNER=16;
+	int OUTER=REG/INNER;
+	omp_set_num_threads(nThreads);
+	#pragma omp parallel shared(input_data,spectra,coeff) private(start,end,i,bl,t,c,i_data,i_coeff,i_spectra,i_temp)
+	{
+		th_id = omp_get_thread_num();
+		block_step=nBlocks/nThreads;
+		if (block_step==0){
+			if ( th_id<(nBlocks-(nTaps-1)) ) {
+				start=th_id;
+				end=th_id+1;
+			}
+		}
+		else {
+			end=(th_id+1)*block_step;
+			if (th_id==nThreads-1) end=end-(nTaps-1);
+			start=th_id*block_step;
+		}
+		
+		for(i=0;i<OUTER;i++){
+		
+			for(bl=start;bl<end;bl++){
+				for(c=0;c<INNER;c++){
+					// Zeroing!
+					i_spectra[0]=_mm256_setzero_ps();i_spectra[1]=_mm256_setzero_ps();
+					
+					for(t=0;t<nTaps;t++){
+						//Loading data
+						i_coeff[0]=_mm256_load_ps(&coeff[(RpCl*c)*FpR+t*nChannels]);
+						i_coeff[1]=_mm256_load_ps(&coeff[(RpCl*c+1)*FpR+t*nChannels]);
+											
+						i_data[0]=_mm256_load_ps(&input_data[(t+bl)*nChannels+(RpCl*c)*FpR]);
+						i_data[1]=_mm256_load_ps(&input_data[(t+bl)*nChannels+(RpCl*c+1)*FpR]);
+						
+						i_temp[0]=_mm256_mul_ps(i_data[0],i_coeff[0]);
+						i_temp[1]=_mm256_mul_ps(i_data[1],i_coeff[1]);
+						
+						i_spectra[0]=_mm256_add_ps(i_temp[0],i_spectra[0]);
+						i_spectra[1]=_mm256_add_ps(i_temp[1],i_spectra[1]);	
+					} // for nTaps
+					_mm256_stream_ps(&spectra[(RpCl*c)*FpR + bl*nChannels],i_spectra[0]);
+					_mm256_stream_ps(&spectra[(RpCl*c+1)*FpR + bl*nChannels],i_spectra[1]);
+				}//inner
+			}// for nBlocks
+		}// Outer
+	}// parallel block
 }

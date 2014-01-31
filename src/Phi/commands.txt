@@ -1,0 +1,12 @@
+Commands for philias:
+
+modules:
+module load intel-compilers/2013
+module load mic-nativeloadex/2013
+
+compile:
+icpc -O3 -opt-threads-per-core=2 -mmic -openmp -mkl -vec-report3 phi_fir_vec3.cpp -o fir_vec.mic
+export 	SINK_LD_LIBRARY_PATH=/opt/intel/composerxe/composer_xe_2013.3.163/mkl/lib/mic/:/opt/intel/composerxe/composer_xe_2013.3.163/compiler/lib/mic/
+
+run:
+micnativeloadex phi_fft.mic -e "KMP_AFFINITY=compact SINK_LD_LIBRARY_PATH=/opt/intel/composerxe/composer_xe_2013.3.163/mkl/lib/mic/"

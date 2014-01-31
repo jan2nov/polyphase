@@ -1,6 +1,8 @@
+#include <mkl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
+#include <math.h>
 
 
 double FIR_check_uni(float *input_data, float *spectra_GPU, float *coeff, unsigned int nTaps, unsigned int nChannels, unsigned int nBlocks){
@@ -26,9 +28,30 @@ double FIR_check_uni(float *input_data, float *spectra_GPU, float *coeff, unsign
 }
 
 
+//lapack_complex_float==MKL_Complex8 = (real,float)
+//http://software.intel.com/sites/products/documentation/hpc/mkl/lin/MKL_UG_coding_calls/Using_Complex_Types_in_C_C.htm
+
+void Phi_FFT_separated_single(MKL_Complex8 *input, int nSpectra, int nChannels){
+	int nThreads = omp_get_num_threads();
+	int nTransformations=nSpectra/nThreads;
+	int th=0;
+	
+	DFTI_DESCRIPTOR_HANDLE handle = 0;
+	DftiCreateDescriptor(&handle, DFTI_SINGLE, DFTI_COMPLEX,1,(MKL_LONG) nChannels);
+	DftiSetValue(handle, DFTI_PLACEMENT, DFTI_INPLACE); //I will over write input array
+	DftiCommitDescriptor(handle);	
+	//schedule(static,block_step)
+	#pragma omp parallel for shared(nTransformations,nChannels,nThreads,input) private(temp)
+	for (th = 0; th < nSpectra; th++) {
+		DftiComputeForward(handle, &input[th*nChannels]);
+	}
+	DftiFreeDescriptor(&handle);
+}
+
+
 void FIR_XEON_PHI( int nTaps, int nChannels, int nSpectra){
 	//********************************* Allocations **********************************
-	double FIR_time,FIR_start;
+	double FIR_time,FIR_start,FFT_time,FFT_start;
 	double Total_time=0;
 	long int bl,t;
 
@@ -64,6 +87,7 @@ void FIR_XEON_PHI( int nTaps, int nChannels, int nSpectra){
 		
 	FIR_start=omp_get_wtime();
 	
+	
 	#pragma omp parallel for private(t,bl) shared(input_data,spectra,coeff)
 	for(bl=0; bl<(nBlocks-nTaps+1); bl++) {
 		//block=bl*nChannels*2;
@@ -73,16 +97,25 @@ void FIR_XEON_PHI( int nTaps, int nChannels, int nSpectra){
 			spectra[bl*nChannels*2:nChannels*2]=coeff[t*nChannels*2:nChannels*2]*input_data[(t+bl)*nChannels*2:nChannels*2] + spectra[bl*nChannels*2:nChannels*2];
 		}
 	}
-	
 	FIR_time = omp_get_wtime() - FIR_start;
 	
 	//printf("Error: %f \n", FIR_check_uni(input_data,spectra,coeff,nTaps,nChannels,nBlocks));
+	
+	FFT_start=omp_get_wtime();
+	Phi_FFT_separated_single((MKL_Complex8 *) spectra,nSpectra,nChannels);
+	FFT_time = omp_get_wtime() - FFT_start;
+	
 
 	double Gflop=2.0*nTaps*data_size;
 	double GFlops=Gflop/FIR_time;
 	double Bandwidth=(8.0*data_size*nTaps+4.0*data_size)/FIR_time;
 	
-	printf("%d %f %f %f %f\n",nSpectra,FIR_time,Total_time,Bandwidth,GFlops);
+	double FFTGFlops=nSpectra*(2.5*nChannels*log2(1.0*nChannels))/FFT_time;
+	
+	Total_time=FIR_time+FFT_time;
+	printf("%d %f %f %f %f %f %f\n",nSpectra,FIR_time,Total_time,Bandwidth,GFlops,FFTGFlops,FFT_time);
+	
+	
 	
 	_mm_free(input_data);
 	_mm_free(spectra);
@@ -100,20 +133,31 @@ int main(){
 	long int bl,t,i;
 	int data_start;
 	
+	//omp_set_num_threads(120);
+	//kmp_set_defaults("KMP_AFFINITY=compact");
+	
 	printf("Starting Calculation\n");
 	//printf("nSpectra=%d ;nBlocks=%d\n",nSpectra,nBlocks);
 	//printf("Data size: %d ;Spectra size: %d \n",data_size,spectra_size);
-
+	
 	nSpectra=15000;
 	FIR_XEON_PHI(nTaps,nChannels,nSpectra);
+	
+	nSpectra=15000;
+	FIR_XEON_PHI(nTaps,nChannels,nSpectra);
+	
 	nSpectra=30000;
 	FIR_XEON_PHI(nTaps,nChannels,nSpectra);
+	
 	nSpectra=60000;
 	FIR_XEON_PHI(nTaps,nChannels,nSpectra);
+	
 	nSpectra=120000;
 	FIR_XEON_PHI(nTaps,nChannels,nSpectra);
+	
 	nSpectra=240000;
 	FIR_XEON_PHI(nTaps,nChannels,nSpectra);	
+	
 	nSpectra=480000;
 	FIR_XEON_PHI(nTaps,nChannels,nSpectra);	
 	

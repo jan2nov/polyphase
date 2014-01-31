@@ -20,7 +20,7 @@ void FIR_para_INT_Mk6(float *input_data, float *spectra, float *coeff, int nTaps
 
 void FIR_para_INT_Mk4_256(float *input_data, float *spectra, float *coeff, int nTaps, int nChannels, int nBlocks, int nThreads);
 void FIR_serial_INT_Mk4_256(float *input_data, float *spectra, float *coeff, int nTaps, int nChannels, int nBlocks);
-
+void FIR_para_INT_Mk6_256(float *input_data, float *spectra, float *coeff, int nTaps, int nChannels, int nBlocks,int nThreads);
 
 
 

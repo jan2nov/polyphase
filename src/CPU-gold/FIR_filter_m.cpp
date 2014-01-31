@@ -608,7 +608,7 @@ int main(void) {
 		bandwidth=((MEMORY_READ+MEMORY_WRITE)/mean_FIR);
 		flops=(FLOPS/mean_FIR);
 		PwI3_FILE << THREADS << " " << mean_FIR << " " << mean_W << " " << bandwidth << " " << flops << endl;
-
+		
 
 		//**************
 		// PARALLEL CODE WITH INTRINSIC Mk3
@@ -622,7 +622,7 @@ int main(void) {
 			sum_FFT+=mtime_FFT;
 			sum_Coupling+=mtime_Coupling;
 			sum_W+=mtime;
-			if(debug) cout << "PARALLEL CODE WITH INTRINSIC Mk3: FIR=" << mtime_FIR << " ;All=" << mtime << endl;
+			if(debug) cout << "PARALLEL CODE WITH INTRINSIC Mk4: FIR=" << mtime_FIR << " ;All=" << mtime << endl;
 		}
 		mean_W=(double) (sum_W/nRuns);mean_FIR=(double) (sum_FIR/nRuns);mean_FFT=(double) (sum_FFT/nRuns);
 		bandwidth=((MEMORY_READ+MEMORY_WRITE)/mean_FIR);
@@ -642,7 +642,7 @@ int main(void) {
 			sum_FFT+=mtime_FFT;
 			sum_Coupling+=mtime_Coupling;
 			sum_W+=mtime;
-			if(debug) cout << "PARALLEL CODE WITH INTRINSIC Mk3: FIR=" << mtime_FIR << " ;All=" << mtime << endl;
+			if(debug) cout << "PARALLEL CODE WITH INTRINSIC Mk6: FIR=" << mtime_FIR << " ;All=" << mtime << endl;
 		}
 		mean_W=(double) (sum_W/nRuns);mean_FIR=(double) (sum_FIR/nRuns);mean_FFT=(double) (sum_FFT/nRuns);
 		bandwidth=((MEMORY_READ+MEMORY_WRITE)/mean_FIR);

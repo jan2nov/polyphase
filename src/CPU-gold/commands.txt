@@ -1,0 +1,7 @@
+modules:
+module load intel-compilers/2013
+module load mic-nativeloadex/2013
+
+
+compile:
+icc FIR_filter_m.cpp Filter_window.cpp Filters.cpp -o FIR_filter_m.exe -openmp -lfftw3f -include Filter_window.h Filters.h -O3
