@@ -206,7 +206,7 @@ printf("\nTotal execution time %g ms.\n", mem_time_in + fir_time + mem_time_out)
 	sprintf(str,"GPU-polyphase.dat");
 	
 		printf("\n Write results into file...\t");
-		if (WRITE) save_time(str, nBlocks-nTaps+1, fir_time, fft_time, mem_time_in, mem_time_out, nChannels, nTaps);
+		if (WRITE) save_time(str, nBlocks-nTaps+1, fir_time, fft_time, mem_time_in, mem_time_out, nChannels, nTaps, 0, nThreads);
 		printf("\t done.\n-------------------------------------\n");
 
 //--------------- clean-up process ----------------------------

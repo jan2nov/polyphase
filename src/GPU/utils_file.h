@@ -57,7 +57,7 @@ bool Load_window_data(float *coeff){
 	return(1);
 }
 
-bool save_time(char str[], int num_blocks, float fir_time, float fft_time, float mem_time_in, float mem_time_out, const int nChannels, const int nTaps){
+bool save_time(char str[], int num_blocks, float fir_time, float fft_time, float mem_time_in, float mem_time_out, const int nChannels, const int nTaps, const int nStreams, const int nThreads){
 	ofstream FILEOUT;
 	FILEOUT.open (str, std::ofstream::out | std::ofstream::app);
 	double flops = 0.0f; 
@@ -65,7 +65,7 @@ bool save_time(char str[], int num_blocks, float fir_time, float fft_time, float
 	bandwidth = (3.0*nChannels*nTaps*sizeof(float)+nChannels*2.0*sizeof(float))*(num_blocks)*1000.0/fir_time;
 	flops = (4.0*nTaps)*nChannels*(num_blocks)*1000.0/fir_time;
 	//------------------
-		FILEOUT << std::fixed << std::setprecision(8) << num_blocks << "\t" << fir_time/1000.0 << "\t" << (fir_time+fft_time)/1000.0 << "\t" << std::scientific << bandwidth << "\t" << flops << "\t" << std::fixed << mem_time_in/1000.0  << "\t" << mem_time_out/1000.0 << "\t" << nTaps << endl;
+		FILEOUT << std::fixed << std::setprecision(8) << num_blocks << "\t" << fir_time/1000.0 << "\t" << (fir_time+fft_time)/1000.0 << "\t" << std::scientific << bandwidth << "\t" << flops << "\t" << std::fixed << mem_time_in/1000.0  << "\t" << mem_time_out/1000.0 << "\t" << nTaps << "\t" << nStreams << "\t" << nThreads << endl;
 	FILEOUT.close();
 	return 0;
 }

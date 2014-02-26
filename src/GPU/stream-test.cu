@@ -184,7 +184,7 @@ for (int i = 0; i < run_blocks; i+=seg_blocks*nStreams){
 	sprintf(str,"GPU-stream-%s.dat",devProp.name);
 	
 		printf("\n Write results into file...\t");
-		if (WRITE) save_time(str, nBlocks-nTaps+1, fir_time, fft_time, mem_time_in, mem_time_out, nChannels, nTaps);
+		if (WRITE) save_time(str, nBlocks-nTaps+1, fir_time, fft_time, mem_time_in, mem_time_out, nChannels, nTaps, nStreams, nThreads);
 		printf("\t done.\n-------------------------------------\n");
 
 
