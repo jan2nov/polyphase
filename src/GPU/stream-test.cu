@@ -55,6 +55,7 @@ void gpu_code(  float2 *data,
 				unsigned int filesize,
 				int blocks_y, 
 				int nTaps, 
+				int nStreams,
 				int seg_blocks){
 					
 bool WRITE=true;
@@ -81,14 +82,12 @@ bool WRITE=true;
 	GpuTimer timer, time_memory, time_kernels;
 
 //------------- stream setup ------------------------------------
-	cudaStream_t stream0, stream1, stream2, stream3;
+		cudaStream_t stream[nStreams];
  
 	printf("\nStream creating...\t\t\t");
 	timer.Start();
-			checkCudaErrors(cudaStreamCreate(&stream0));
-			checkCudaErrors(cudaStreamCreate(&stream1));
-			checkCudaErrors(cudaStreamCreate(&stream2));
-			checkCudaErrors(cudaStreamCreate(&stream3));
+		for(int i = 0; i < nStreams; i++)
+			checkCudaErrors(cudaStreamCreate(&stream[i]));
 	timer.Stop();
 	printf("done in %g ms.\n", timer.Elapsed());
 	
@@ -109,11 +108,8 @@ bool WRITE=true;
 	
 	
 	//stream 0..4
-	float2 *d_spectra_0, *d_data_0;
-	float2 *d_spectra_1, *d_data_1;
-	float2 *d_spectra_2, *d_data_2;
-	float2 *d_spectra_3, *d_data_3;
-
+	float2 *d_spectra[nStreams], *d_data[nStreams];
+	
 	float fir_time = 0.0f;
 	float fft_time = 0.0f;
 	float mem_time_in = 0.0f;
@@ -126,22 +122,18 @@ bool WRITE=true;
 	dim3 blockSize0(nChannels/gridSize0.y, 1, 1); 
 	//dim3 gridSize1( run_blocks - grid_0, blocks_y, 1);
 	//dim3 blockSize1(nChannels/gridSize1.y, 1, 1); 
-		
-	checkCudaErrors(cudaMalloc((void **) &d_spectra_0, sizeof(float2)*SegSize));
-	checkCudaErrors(cudaMalloc((void **) &d_spectra_1, sizeof(float2)*SegSize));
-	checkCudaErrors(cudaMalloc((void **) &d_spectra_2, sizeof(float2)*SegSize));
-	checkCudaErrors(cudaMalloc((void **) &d_spectra_3, sizeof(float2)*SegSize));
-	checkCudaErrors(cudaMalloc((void **) &d_coeff,   sizeof(float)*nChannels*nTaps));
-	checkCudaErrors(cudaMalloc((void **) &d_data_0,    sizeof(float2)*SegSize));	
-	checkCudaErrors(cudaMalloc((void **) &d_data_1,    sizeof(float2)*SegSize));
-	checkCudaErrors(cudaMalloc((void **) &d_data_2,    sizeof(float2)*SegSize));	
-	checkCudaErrors(cudaMalloc((void **) &d_data_3,    sizeof(float2)*SegSize));
 	
-	printf("\n\t\td_spectra using filesize: \t%g MB.", 4*sizeof(float2)*SegSize/1024.0/1024);
+	for (int i = 0; i < nStreams; i++){
+		checkCudaErrors(cudaMalloc((void **) &d_spectra[i], sizeof(float2)*SegSize));
+		checkCudaErrors(cudaMalloc((void **) &d_data[i],    sizeof(float2)*SegSize));	
+	}
+		checkCudaErrors(cudaMalloc((void **) &d_coeff,   sizeof(float)*nChannels*nTaps));
+	
+	printf("\n\t\td_spectra using filesize: \t%g MB.", nStreams*sizeof(float2)*SegSize/1024.0/1024);
 	printf("\n\t\td_coeff using filesize: \t%g MB.", sizeof(float)*SegSize/1024.0/1024);
-	printf("\n\t\td_data using filesize: \t\t%g MB.", 4*sizeof(float2)*SegSize/1024.0/1024);
+	printf("\n\t\td_data using filesize: \t\t%g MB.", nStreams*sizeof(float2)*SegSize/1024.0/1024);
 	printf("\n\t\t----------------------\t\t-----------");
-	printf("\n\t\tTotal: \t\t\t\t%g MB.\n\n",sizeof(float)*(17.0*SegSize)/1024/1024);
+	printf("\n\t\tTotal: \t\t\t\t%g MB.\n\n",sizeof(float)*((nStreams*4.0+1)*SegSize)/1024/1024);
 	
 	//coefficients copy
 	checkCudaErrors(cudaMemcpy(d_coeff, coeff, nChannels*nTaps*sizeof(float), cudaMemcpyHostToDevice));
@@ -151,42 +143,22 @@ bool WRITE=true;
 	//checkCudaErrors(cudaMemset(d_spectra_1, 0.0, sizeof(float2)*SegSize));
 
 	//Create fft Plan
-	cufftHandle plan0;
-	cufftHandle plan1;
-	cufftHandle plan2;
-	cufftHandle plan3;
-	cufftPlan1d(&plan0, nChannels, CUFFT_C2C, seg_blocks);
-	cufftPlan1d(&plan1, nChannels, CUFFT_C2C, seg_blocks);
-	cufftPlan1d(&plan2, nChannels, CUFFT_C2C, seg_blocks);
-	cufftPlan1d(&plan3, nChannels, CUFFT_C2C, seg_blocks);
-	cufftSetStream(plan0,stream0);
-	cufftSetStream(plan1,stream1);
-	cufftSetStream(plan2,stream2);
-	cufftSetStream(plan3,stream3);
+	cufftHandle plan[nStreams];
+	for (int i = 0; i < nStreams; i++){
+	cufftPlan1d(&plan[i], nChannels, CUFFT_C2C, seg_blocks);
+	cufftSetStream(plan[i],stream[i]);
+	}
 	
 	timer.Start();
-for (int i = 0; i < run_blocks; i+=seg_blocks*4){
-
-		checkCudaErrors(cudaMemcpyAsync(d_data_0, data + i*nChannels, sizeof(float2)*SegSize, cudaMemcpyHostToDevice, stream0));
-		checkCudaErrors(cudaMemcpyAsync(d_data_1, data + seg_offset + i*nChannels, sizeof(float2)*SegSize, cudaMemcpyHostToDevice, stream1));
-		checkCudaErrors(cudaMemcpyAsync(d_data_2, data + 2*seg_offset + i*nChannels, sizeof(float2)*SegSize, cudaMemcpyHostToDevice, stream2));
-		checkCudaErrors(cudaMemcpyAsync(d_data_3, data + 3*seg_offset + i*nChannels, sizeof(float2)*SegSize, cudaMemcpyHostToDevice, stream3));
-
-		Fir_SpB<<<gridSize0, blockSize0, 0, stream0>>>(d_data_0, d_coeff, nTaps, nChannels, 0, d_spectra_0);
-		cufftExecC2C(plan0, (cufftComplex *)d_spectra_0, (cufftComplex *)d_spectra_0, CUFFT_FORWARD);
-		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels, d_spectra_0, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream0));
-
-		Fir_SpB<<<gridSize0, blockSize0, 0, stream1>>>(d_data_1, d_coeff, nTaps, nChannels, 0, d_spectra_1);
-		cufftExecC2C(plan1, (cufftComplex *)d_spectra_1, (cufftComplex *)d_spectra_1, CUFFT_FORWARD);
-		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels + seg_offset, d_spectra_1, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream1));
+for (int i = 0; i < run_blocks; i+=seg_blocks*nStreams){
+	
+	for (int j = 0; j < nStreams; j++){
+		checkCudaErrors(cudaMemcpyAsync(d_data[j], data + j*seg_offset + i*nChannels, sizeof(float2)*SegSize, cudaMemcpyHostToDevice, stream[j]));
 		
-		Fir_SpB<<<gridSize0, blockSize0, 0, stream2>>>(d_data_2, d_coeff, nTaps, nChannels, 0, d_spectra_2);
-		cufftExecC2C(plan2, (cufftComplex *)d_spectra_2, (cufftComplex *)d_spectra_2, CUFFT_FORWARD);
-		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels + 2*seg_offset, d_spectra_2, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream2));
-		
-		Fir_SpB<<<gridSize0, blockSize0, 0, stream3>>>(d_data_3, d_coeff, nTaps, nChannels, 0, d_spectra_3);
-		cufftExecC2C(plan3, (cufftComplex *)d_spectra_3, (cufftComplex *)d_spectra_3, CUFFT_FORWARD);
-		checkCudaErrors(cudaMemcpyAsync(spectra + i*nChannels + 3*seg_offset, d_spectra_3, sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream3));
+		Fir_SpB<<<gridSize0, blockSize0, 0, stream[j]>>>(d_data[j], d_coeff, nTaps, nChannels, 0, d_spectra[j]);
+		cufftExecC2C(plan[j], (cufftComplex *)d_spectra[j], (cufftComplex *)d_spectra[j], CUFFT_FORWARD);
+		checkCudaErrors(cudaMemcpyAsync(spectra + j*seg_offset + i*nChannels, d_spectra[j], sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream[j]));
+	}
 }
 
 	timer.Stop();
@@ -204,24 +176,11 @@ for (int i = 0; i < run_blocks; i+=seg_blocks*4){
 
 
 //--------------- clean-up process ----------------------------
-	checkCudaErrors(cudaFree(d_spectra_0));
-	checkCudaErrors(cudaFree(d_spectra_1));
-	checkCudaErrors(cudaFree(d_spectra_2));
-	checkCudaErrors(cudaFree(d_spectra_3));
-	checkCudaErrors(cudaFree(d_data_0));
-	checkCudaErrors(cudaFree(d_data_1));
-	checkCudaErrors(cudaFree(d_data_2));
-	checkCudaErrors(cudaFree(d_data_3));
 	checkCudaErrors(cudaFree(d_coeff));
-
-	cufftDestroy(plan0);
-	cufftDestroy(plan1);
-	cufftDestroy(plan2);
-	cufftDestroy(plan3);
-
-	checkCudaErrors(cudaStreamDestroy(stream0));
-	checkCudaErrors(cudaStreamDestroy(stream1));
-	checkCudaErrors(cudaStreamDestroy(stream2));
-	checkCudaErrors(cudaStreamDestroy(stream3));
-
+	for (int i = 0; i < nStreams; i++){
+		checkCudaErrors(cudaFree(d_spectra[i]));
+		checkCudaErrors(cudaFree(d_data[i]));
+		cufftDestroy(plan[i]);
+		checkCudaErrors(cudaStreamDestroy(stream[i]));
+	}
 }

@@ -11,13 +11,14 @@ typedef float2 Complex;
 
 void reference_calculation(float2 *inputVals, float2 *outputVals, float *coeff, const int nChannels, unsigned int nBlocks, int nTaps);
 
-void gpu_code(float2 *data, float2 *spectra, float *coeff, const int nChannels, unsigned int nBlocks, unsigned int filesize, int blocks_y, int nTaps, int seg_blocks);
+void gpu_code(float2 *data, float2 *spectra, float *coeff, const int nChannels, unsigned int nBlocks, unsigned int filesize, int blocks_y, int nTaps, int nStreams, int seg_blocks);
 
 float reference_code(float2 *spectra_ref, float2 *spectra, int nChannels, unsigned int nTaps, unsigned int nBlocks);
 
 int main(int argc, char **argv){
 	
 	int nTaps = 8;
+	int nStreams = 2;
 	int NUM_BLOCKS = 1;
 	int seg_blocks = 5000;
 	unsigned int data_size = 10000+nTaps-1;
@@ -31,9 +32,10 @@ int main(int argc, char **argv){
 	float *h_coeff;
 
 	if (argc >= 2) NUM_BLOCKS = atof(argv[1]);
-	if (argc >= 3) nTaps 	  = (atof(argv[2]));
-	if (argc >= 4) seg_blocks = (atof(argv[3]));
-	if (argc >= 5) data_size  = (atof(argv[4])+nTaps-1)*nChannels;
+	if (argc >= 3) nStreams	  = (atof(argv[2]));
+	if (argc >= 4) nTaps 	  = (atof(argv[3]));
+	if (argc >= 5) seg_blocks = (atof(argv[4]));
+	if (argc >= 6) data_size  = (atof(argv[5])+nTaps-1)*nChannels;
 
 	nBlocks = (data_size+nTaps-1)/nChannels;nBlocks = data_size/nChannels;
 
@@ -76,7 +78,7 @@ int main(int argc, char **argv){
 	
 	//printf("CPU jedna %g druha %g", h_spectra_ref[3584], h_spectra_ref[7*512 + 259999].x);
 
-	gpu_code(h_data_pinned, h_spectra_pinned, h_coeff, nChannels, nBlocks, data_size, NUM_BLOCKS, nTaps, seg_blocks);	
+	gpu_code(h_data_pinned, h_spectra_pinned, h_coeff, nChannels, nBlocks, data_size, NUM_BLOCKS, nTaps, nStreams, seg_blocks);	
 	
 	if (debug){
 		error = reference_code(h_spectra_ref, h_spectra_pinned, nChannels, nTaps, nBlocks);
