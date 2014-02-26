@@ -53,7 +53,7 @@ void gpu_code(  float2 *data,
 				const int nChannels,
 				unsigned int nBlocks, 
 				unsigned int filesize,
-				int blocks_y, 
+				int nThreads, 
 				int nTaps, 
 				int nStreams,
 				int seg_blocks){
@@ -118,8 +118,9 @@ bool WRITE=true;
 
 	// grid and block size
 	//int grid_0 = (int)(seg_blocks/2);
+	int blocks_y = 1;
 	dim3 gridSize0( seg_blocks, blocks_y, 1);
-	dim3 blockSize0(nChannels/gridSize0.y, 1, 1); 
+	dim3 blockSize0(nThreads/gridSize0.y, 1, 1); 
 	//dim3 gridSize1( run_blocks - grid_0, blocks_y, 1);
 	//dim3 blockSize1(nChannels/gridSize1.y, 1, 1); 
 	
@@ -148,16 +149,28 @@ bool WRITE=true;
 	cufftPlan1d(&plan[i], nChannels, CUFFT_C2C, seg_blocks);
 	cufftSetStream(plan[i],stream[i]);
 	}
+
+		int nKernels=(int) nChannels/blockSize0.x;
+		int remainder=nChannels-nKernels*blockSize0.x;
 	
 	timer.Start();
 for (int i = 0; i < run_blocks; i+=seg_blocks*nStreams){
 	
 	for (int j = 0; j < nStreams; j++){
-		checkCudaErrors(cudaMemcpyAsync(d_data[j], data + j*seg_offset + i*nChannels, sizeof(float2)*SegSize, cudaMemcpyHostToDevice, stream[j]));
+
+			checkCudaErrors(cudaMemcpyAsync(d_data[j], data + j*seg_offset + i*nChannels, sizeof(float2)*SegSize, cudaMemcpyHostToDevice, stream[j]));
 		
-		Fir_SpB<<<gridSize0, blockSize0, 0, stream[j]>>>(d_data[j], d_coeff, nTaps, nChannels, 0, d_spectra[j]);
-		cufftExecC2C(plan[j], (cufftComplex *)d_spectra[j], (cufftComplex *)d_spectra[j], CUFFT_FORWARD);
-		checkCudaErrors(cudaMemcpyAsync(spectra + j*seg_offset + i*nChannels, d_spectra[j], sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream[j]));
+			for (int nutak=0;nutak<nKernels;nutak++){	
+				Fir_SpB<<<gridSize0, blockSize0, 0, stream[j]>>>(d_data[j], d_coeff, nTaps, nChannels, nutak*blockSize0.x, d_spectra[j]);
+			}
+			if (remainder>0){
+				//int old_blockSize = blockSize0.x;
+				dim3 blockSize1(remainder,1,1);
+				Fir_SpB<<<gridSize0, blockSize1, 0, stream[j]>>>(d_data[j], d_coeff, nTaps, nChannels, nKernels*blockSize0.x, d_spectra[j]);
+			}
+			
+			cufftExecC2C(plan[j], (cufftComplex *)d_spectra[j], (cufftComplex *)d_spectra[j], CUFFT_FORWARD);
+			checkCudaErrors(cudaMemcpyAsync(spectra + j*seg_offset + i*nChannels, d_spectra[j], sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream[j]));
 	}
 }
 
