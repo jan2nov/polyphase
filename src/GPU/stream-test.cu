@@ -29,7 +29,7 @@ __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coef
 	//return;
 }
 
-__global__ void Fir_SpB(float2* d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
+__global__ void Fir_SpB(float2* __restrict__  d_data, float* __restrict__ d_coeff, int nTaps, int nChannels, int yshift, float2* __restrict__ d_spectra) {
 	int t = 0;
 	int bl= blockIdx.x*nChannels;
 	int ypos = blockDim.x*blockIdx.y + yshift;
