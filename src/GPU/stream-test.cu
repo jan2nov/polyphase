@@ -154,6 +154,7 @@ bool WRITE=true;
 		int remainder=nChannels-nKernels*blockSize0.x;
 	
 	timer.Start();
+for (int k=0; k<10; k++){
 for (int i = 0; i < run_blocks; i+=seg_blocks*nStreams){
 	
 	for (int j = 0; j < nStreams; j++){
@@ -173,7 +174,7 @@ for (int i = 0; i < run_blocks; i+=seg_blocks*nStreams){
 			checkCudaErrors(cudaMemcpyAsync(spectra + j*seg_offset + i*nChannels, d_spectra[j], sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream[j]));
 	}
 }
-
+}
 	timer.Stop();
 	fir_time=timer.Elapsed();
 	printf("\nDone in %g ms.\n", fir_time);
