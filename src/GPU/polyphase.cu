@@ -35,8 +35,8 @@ __global__ void Fir_SpB(float2* __restrict__  d_data, float* __restrict__ d_coef
 	int t = 0;
 	int bl= blockIdx.x*nChannels;
 	int ypos = blockDim.x*blockIdx.y + yshift;
-	float2 ftemp1;
-	ftemp1.x=0.0f;ftemp1.y=0.0f;
+	float2 ftemp1 = make_float2(0.0,0.0);
+	//ftemp1.x=0.0f;ftemp1.y=0.0f;
 
 	for(t=ypos + threadIdx.x;t<nTaps*nChannels;t+=nChannels){
 		ftemp1.x  += d_coeff[t]*d_data[bl+t].x;
@@ -45,6 +45,34 @@ __global__ void Fir_SpB(float2* __restrict__  d_data, float* __restrict__ d_coef
 
 	t=bl + ypos + threadIdx.x;
 	d_spectra[t]=ftemp1;
+	return;
+}
+
+
+__global__ void Fir_SpB_shared(float2* __restrict__  d_data, float* __restrict__ d_coeff, int nTaps, int nChannels, int yshift, float2* __restrict__ d_spectra) {
+	int t = 0;
+	int bl= 2*blockIdx.x*nChannels;
+	int ypos = blockDim.x*blockIdx.y + yshift;
+	float2 ftemp1, ftemp2;
+	ftemp1.x=0.0f;ftemp1.y=0.0f;
+	ftemp2.x=0.0f;ftemp2.y=0.0f;
+	__shared__ float coeff[1536];
+	
+	for(t=ypos + threadIdx.x;t<nTaps*nChannels;t++){
+		coeff[threadIdx.x] = d_coeff[t];
+	}
+	__syncthreads();
+
+	for(t=ypos + threadIdx.x;t<nTaps*nChannels;t+=nChannels){
+		ftemp1.x  += coeff[threadIdx.x]*d_data[bl+t].x;
+		ftemp1.y  += coeff[threadIdx.x]*d_data[bl+t].y;
+		ftemp2.x  += coeff[threadIdx.x]*d_data[bl+nChannels+t].x;
+		ftemp2.y  += coeff[threadIdx.x]*d_data[bl+nChannels+t].y;
+	}
+
+	t=bl + ypos + threadIdx.x;
+	d_spectra[t]=ftemp1;
+	d_spectra[t+nChannels]=ftemp2;
 	return;
 }
 
@@ -139,19 +167,19 @@ void gpu_code(  float2 *data_in,
 									run_blocks = run_blocks - maxgrid_x;
 		} else grid_x = run_blocks;
 		
-		dim3 gridSize(grid_x, blocks_y, 1);
+		dim3 gridSize(grid_x/2, blocks_y, 1);
 		dim3 blockSize(nThreads/gridSize.y, 1, 1); 
 	
 		timer.Start();
 		int nKernels=(int) nChannels/blockSize.x;
 		int remainder=nChannels-nKernels*blockSize.x;
 		for (int nutak=0;nutak<nKernels;nutak++){	
-			Fir_SpB<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nutak*blockSize.x, (float2*) d_spectra + i*maxgrid_x*nChannels);
+			Fir_SpB_shared<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nutak*blockSize.x, (float2*) d_spectra + i*maxgrid_x*nChannels);
 		}
 		if (remainder>0){
 			int old_blockSize = blockSize.x;
 			blockSize.x=remainder;
-			Fir_SpB<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nKernels*old_blockSize, (float2*) d_spectra + i*maxgrid_x*nChannels);
+			Fir_SpB_shared<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nKernels*old_blockSize, (float2*) d_spectra + i*maxgrid_x*nChannels);
 		}
 		timer.Stop();
 	 	fir_time+=timer.Elapsed();

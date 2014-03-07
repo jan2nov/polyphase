@@ -8,7 +8,7 @@ set logscale x
 set grid
 plot 'dataZen/SSE42_pwi4_perf.dat' using 1:2 w lines lt -1 lw 3 lc rgb 'black' title 'Parallel with intrinsic XEON 5650 (SSE4.2)'\
 ,'dataZen/AVX_pwi4_perf.dat' using 1:2 w lines lt -1 lw 3 lc rgb 'red' title 'Parallel with intrinsic XEON E5-2650 (AVX)'\
-,'dataZen/phi_fir_new.dat' using 1:2 w lines lt -1 lw 3 lc rgb 'blue' title 'Parallel with intrinsic XEON PHI (AVX-512)'
+,'dataZen/xeon_phi.dat' using 1:2 w lines lt -1 lw 3 lc rgb 'blue' title 'Parallel with intrinsic XEON PHI (AVX-512)'
 reset;
 
 
@@ -23,7 +23,7 @@ set logscale x
 set grid
 plot 'dataZen/SSE42_pwi4_perf.dat' using 1:3 w lines lt -1 lw 3 lc rgb 'black' title 'Parallel with intrinsic XEON 5650 (SSE4.2)'\
 ,'dataZen/AVX_pwi4_perf.dat' using 1:3 w lines lt -1 lw 3 lc rgb 'red' title 'Parallel with intrinsic XEON E5-2650 (AVX)'\
-,'dataZen/phi_fir_new.dat' using 1:3 w lines lt -1 lw 3 lc rgb 'blue' title 'Parallel with intrinsic XEON PHI (AVX-512)'
+,'dataZen/xeon_phi.dat' using 1:3 w lines lt -1 lw 3 lc rgb 'blue' title 'Parallel with intrinsic XEON PHI (AVX-512)'
 reset;
 
 
@@ -41,7 +41,7 @@ set logscale x
 set grid
 plot 'dataZen/SSE42_pwi4_perf.dat' using 1:4 w lines lt -1 lw 3 lc rgb 'black' title 'Parallel with intrinsic XEON 5650 (SSE4.2)'\
 ,'dataZen/AVX_pwi4_perf.dat' using 1:4 w lines lt -1 lw 3 lc rgb 'red' title 'Parallel with intrinsic XEON E5-2650 (AVX)'\
-,'dataZen/phi_fir_new.dat' using 1:4 w lines lt -1 lw 3 lc rgb 'blue' title 'Parallel with intrinsic XEON PHI (AVX-512)'
+,'dataZen/xeon_phi.dat' using 1:4 w lines lt -1 lw 3 lc rgb 'blue' title 'Parallel with intrinsic XEON PHI (AVX-512)'
 reset;
 
 
@@ -60,7 +60,7 @@ set logscale x
 set grid
 plot 'dataZen/SSE42_pwi4_perf.dat' using 1:5 w lines lt -1 lw 3 lc rgb 'black' title 'Parallel with intrinsic XEON 5650 (SSE4.2)'\
 ,'dataZen/AVX_pwi4_perf.dat' using 1:5 w lines lt -1 lw 3 lc rgb 'red' title 'Parallel with intrinsic XEON E5-2650 (AVX)'\
-,'dataZen/phi_fir_new.dat' using 1:5 w lines lt -1 lw 3 lc rgb 'blue' title 'Parallel with intrinsic XEON PHI (AVX-512)'
+,'dataZen/xeon_phi.dat' using 1:5 w lines lt -1 lw 3 lc rgb 'blue' title 'Parallel with intrinsic XEON PHI (AVX-512)'
 reset;
 
 

@@ -99,7 +99,7 @@ void  reference_calculation(float2 *inputVals,
 	Setup_buffer(w_buffer, inputVals, &oldesttap, nChannels, nTaps);
 	Fir_cpu(w_buffer, inputVals, &oldesttap, nChannels, nTaps, nBlocks, coeff, outputVals);
 
-		fftwf_plan p;
+	fftwf_plan p;
 		fftwf_complex *in, *out;
 
 		in = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * nChannels);
