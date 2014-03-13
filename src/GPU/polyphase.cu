@@ -36,9 +36,8 @@ __global__ void Fir_SpB(float2* __restrict__  d_data, float* __restrict__ d_coef
 	int bl= blockIdx.x*nChannels;
 	int ypos = blockDim.x*blockIdx.y + yshift;
 	float2 ftemp1 = make_float2(0.0,0.0);
-	//ftemp1.x=0.0f;ftemp1.y=0.0f;
 
-	for(t=ypos + threadIdx.x;t<nTaps*nChannels;t+=nChannels){
+	for(t=ypos + threadIdx.x;t<(nTaps)*nChannels;t+=nChannels){
 		ftemp1.x  += d_coeff[t]*d_data[bl+t].x;
 		ftemp1.y  += d_coeff[t]*d_data[bl+t].y;
 	}
@@ -47,32 +46,66 @@ __global__ void Fir_SpB(float2* __restrict__  d_data, float* __restrict__ d_coef
 	d_spectra[t]=ftemp1;
 	return;
 }
-
-
-__global__ void Fir_SpB_shared(float2* __restrict__  d_data, float* __restrict__ d_coeff, int nTaps, int nChannels, int yshift, float2* __restrict__ d_spectra) {
+__global__ void Fir_prefetch(float2* __restrict__  d_data, float* __restrict__ d_coeff, int nTaps, int nChannels, int yshift, float2* __restrict__ d_spectra) {
 	int t = 0;
-	int bl= 2*blockIdx.x*nChannels;
+	int bl= blockIdx.x*nChannels;
 	int ypos = blockDim.x*blockIdx.y + yshift;
-	float2 ftemp1, ftemp2;
-	ftemp1.x=0.0f;ftemp1.y=0.0f;
-	ftemp2.x=0.0f;ftemp2.y=0.0f;
-	__shared__ float coeff[1536];
-	
-	for(t=ypos + threadIdx.x;t<nTaps*nChannels;t++){
-		coeff[threadIdx.x] = d_coeff[t];
-	}
-	__syncthreads();
+	float2 ftemp1 = make_float2(0.0,0.0);
+	float2 ftemp2 = make_float2(0.0,0.0);
+	float2 sum = make_float2(0.0,0.0);
+	//ftemp1.x=0.0f;ftemp1.y=0.0f;
 
-	for(t=ypos + threadIdx.x;t<nTaps*nChannels;t+=nChannels){
-		ftemp1.x  += coeff[threadIdx.x]*d_data[bl+t].x;
-		ftemp1.y  += coeff[threadIdx.x]*d_data[bl+t].y;
-		ftemp2.x  += coeff[threadIdx.x]*d_data[bl+nChannels+t].x;
-		ftemp2.y  += coeff[threadIdx.x]*d_data[bl+nChannels+t].y;
+	ftemp1.x  = d_coeff[ypos+threadIdx.x]*d_data[bl+ypos+threadIdx.x].x;
+	ftemp1.y  = d_coeff[ypos+threadIdx.x]*d_data[bl+ypos+threadIdx.x].y;
+	for(t=ypos + threadIdx.x;t<(nTaps-1)*nChannels;t+=nChannels){
+		ftemp2.x  = d_coeff[t+nChannels]*d_data[bl+t+nChannels].x;
+		ftemp2.y  = d_coeff[t+nChannels]*d_data[bl+t+nChannels].y;
+		sum.x += ftemp1.x;
+		sum.y += ftemp1.y;
+		ftemp1 = ftemp2;
+	}
+	sum.x += ftemp1.x;
+	sum.y += ftemp1.y;
+
+	t=bl + ypos + threadIdx.x;
+	d_spectra[t]=sum;
+	return;
+}
+
+
+__global__ void Fir_SpB_shared(float2* __restrict__  d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* __restrict__ d_spectra) {
+	int t = 0;
+	int bl= 4*blockIdx.x*nChannels;
+	int ypos = blockDim.x*blockIdx.y + yshift;
+	float2 ftemp1 = make_float2(0.0,0.0);
+	float2 ftemp2 = make_float2(0.0,0.0);
+	float2 ftemp3 = make_float2(0.0,0.0);
+	float2 ftemp4 = make_float2(0.0,0.0);
+	float temp;
+	//__shared__ float coeff[4096];
+	
+/*	for(t=ypos + threadIdx.x;t<(nTaps)*nChannels;t++){
+		coeff[t] = d_coeff[t];
+	}
+	__syncthreads();*/
+
+	for(t=ypos + threadIdx.x;t<(nTaps)*nChannels;t+=nChannels){
+		temp = d_coeff[t];
+		ftemp1.x += temp*d_data[bl+t].x;
+		ftemp1.y += temp*d_data[bl+t].y;
+		ftemp2.x += temp*d_data[bl+nChannels+t].x;
+		ftemp2.y += temp*d_data[bl+nChannels+t].y;
+		ftemp3.x += temp*d_data[bl+2*nChannels+t].x;
+		ftemp3.y += temp*d_data[bl+2*nChannels+t].y;
+		ftemp4.x += temp*d_data[bl+3*nChannels+t].x;
+		ftemp4.y += temp*d_data[bl+3*nChannels+t].y;
 	}
 
 	t=bl + ypos + threadIdx.x;
 	d_spectra[t]=ftemp1;
 	d_spectra[t+nChannels]=ftemp2;
+	d_spectra[t+2*nChannels]=ftemp3;
+	d_spectra[t+3*nChannels]=ftemp4;
 	return;
 }
 
@@ -167,7 +200,7 @@ void gpu_code(  float2 *data_in,
 									run_blocks = run_blocks - maxgrid_x;
 		} else grid_x = run_blocks;
 		
-		dim3 gridSize(grid_x/2, blocks_y, 1);
+		dim3 gridSize(grid_x/4, blocks_y, 1);
 		dim3 blockSize(nThreads/gridSize.y, 1, 1); 
 	
 		timer.Start();
@@ -201,7 +234,7 @@ void gpu_code(  float2 *data_in,
 }
 //--------------- cuFFT ----------------------------
 
-	//Create fft Plan
+/*	//Create fft Plan
 	cufftHandle plan;
 	cufftPlan1d(&plan, nChannels, CUFFT_C2C, nBlocks);
 	
@@ -216,7 +249,7 @@ void gpu_code(  float2 *data_in,
 	//Destroy the cuFFT plan
 	cufftDestroy(plan);
 
-
+*/
 
 //--------------- copy data back ----------------------------
 	printf("Copy data from device to host \t");
