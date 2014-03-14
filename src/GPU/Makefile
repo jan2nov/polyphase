@@ -26,7 +26,7 @@ FILE = "../../data_results/gpu_perf-gtx480-all.dat"
 # Basic flags for compilers, one for debug options
 # fmad flags used for reason of floating point operation
 ###############################################################
-NVCCFLAGS = -O2 -fmad=false -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcompiler -Wextra
+NVCCFLAGS = -O2 -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcompiler -Wextra
 #NVCCFLAGS= -g -G -arch=sm_20 --ptxas-options=-v --use_fast_math -Xcompiler -Wextra
 GCC_OPTS =-O2 -Wall -Wextra 
 
