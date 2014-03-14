@@ -18,6 +18,7 @@ float reference_code(float2 *spectra_ref, float2 *spectra, int nChannels, unsign
 int main(int argc, char **argv){
 	
 	int nTaps = 8;
+	int nChannels = 512;
 	int nStreams = 2;
 	int NUM_THREADS = 512;
 	int seg_blocks = 5000;

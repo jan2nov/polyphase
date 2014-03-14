@@ -17,6 +17,7 @@ float reference_code(float2 *spectra_ref, float2 *spectra, int nChannels, unsign
 int main(int argc, char **argv){
 	
 	int nTaps = 8;
+	int nChannels = 512;
 	int num_threads = 512;
 	int NUM_BLOCKS = 1;
 	unsigned int data_size = 10000+nTaps-1;
@@ -29,7 +30,7 @@ int main(int argc, char **argv){
 	Complex *h_signal, *h_spectra, *h_spectra_ref;
 	float *h_coeff;
 
-	if (argc >= 2) NUM_BLOCKS  = atof(argv[1]);
+	if (argc >= 2) nChannels  = atof(argv[1]);
 	if (argc >= 3) num_threads = atof(argv[2]);
 	if (argc >= 4) nTaps 	   = (atof(argv[3]));
 	if (argc >= 5) data_size   = (atof(argv[4])+nTaps-1)*nChannels;

@@ -65,7 +65,7 @@ bool save_time(char str[], int num_blocks, float fir_time, float fft_time, float
 	bandwidth = (3.0*nChannels*nTaps*sizeof(float)+nChannels*2.0*sizeof(float))*(num_blocks)*1000.0/fir_time;
 	flops = (4.0*nTaps)*nChannels*(num_blocks)*1000.0/fir_time;
 	//------------------
-		FILEOUT << std::fixed << std::setprecision(8) << num_blocks << "\t" << fir_time/1000.0 << "\t" << (fir_time+fft_time)/1000.0 << "\t" << std::scientific << bandwidth << "\t" << flops << "\t" << std::fixed << mem_time_in/1000.0  << "\t" << mem_time_out/1000.0 << "\t" << nTaps << "\t" << nStreams << "\t" << nThreads << endl;
+		FILEOUT << std::fixed << std::setprecision(8) << num_blocks << "\t" << fir_time/1000.0 << "\t" << (fir_time+fft_time)/1000.0 << "\t" << std::scientific << bandwidth << "\t" << flops << "\t" << std::fixed << mem_time_in/1000.0  << "\t" << mem_time_out/1000.0 << "\t" << nTaps << "\t" << nStreams << "\t" << nThreads << "\t" << nChannels << endl;
 	FILEOUT.close();
 	return 0;
 }
