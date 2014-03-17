@@ -72,7 +72,7 @@ __global__ void Fir_prefetch(float2* __restrict__  d_data, float* __restrict__ d
 	return;
 }
 
-__global__ void Fir_SpB_shared(float2* __restrict__  d_data, float* __restrict__ d_coeff, int nTaps, int nChannels, int yshift, float2* __restrict__ d_spectra) {
+__global__ void Fir_simple(float2* d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
 	int t = 0;
 	int bl= 4*blockIdx.x*nChannels;
 	int ypos = blockDim.x*blockIdx.y + yshift;
@@ -83,7 +83,97 @@ __global__ void Fir_SpB_shared(float2* __restrict__  d_data, float* __restrict__
 	float temp;
 
 	for(t=ypos + threadIdx.x;t<(nTaps)*nChannels;t+=nChannels){
-		temp = d_coeff[t]; 
+	  temp = d_coeff[t]; 
+		ftemp1.x += temp*d_data[bl+t].x;
+		ftemp1.y += temp*d_data[bl+t].y;
+		ftemp2.x += temp*d_data[bl+nChannels+t].x;
+		ftemp2.y += temp*d_data[bl+nChannels+t].y;
+		ftemp3.x += temp*d_data[bl+2*nChannels+t].x;
+		ftemp3.y += temp*d_data[bl+2*nChannels+t].y;
+		ftemp4.x += temp*d_data[bl+3*nChannels+t].x;
+		ftemp4.y += temp*d_data[bl+3*nChannels+t].y;
+	}
+
+	t=bl + ypos + threadIdx.x;
+	d_spectra[t]=ftemp1;
+	d_spectra[t+nChannels]=ftemp2;
+	d_spectra[t+2*nChannels]=ftemp3;
+	d_spectra[t+3*nChannels]=ftemp4;
+	return;
+}
+
+__global__ void Fir_restrict(float2* __restrict__ const d_data, float* __restrict__ const d_coeff, int nTaps, int nChannels, int yshift, float2* __restrict__ d_spectra) {
+	int t = 0;
+	int bl= 4*blockIdx.x*nChannels;
+	int ypos = blockDim.x*blockIdx.y + yshift;
+	float2 ftemp1 = make_float2(0.0,0.0);
+	float2 ftemp2 = make_float2(0.0,0.0);
+	float2 ftemp3 = make_float2(0.0,0.0);
+	float2 ftemp4 = make_float2(0.0,0.0);
+	float temp;
+
+	for(t=ypos + threadIdx.x;t<(nTaps)*nChannels;t+=nChannels){
+	  temp = d_coeff[t]; 
+		ftemp1.x += temp*d_data[bl+t].x;
+		ftemp1.y += temp*d_data[bl+t].y;
+		ftemp2.x += temp*d_data[bl+nChannels+t].x;
+		ftemp2.y += temp*d_data[bl+nChannels+t].y;
+		ftemp3.x += temp*d_data[bl+2*nChannels+t].x;
+		ftemp3.y += temp*d_data[bl+2*nChannels+t].y;
+		ftemp4.x += temp*d_data[bl+3*nChannels+t].x;
+		ftemp4.y += temp*d_data[bl+3*nChannels+t].y;
+	}
+
+	t=bl + ypos + threadIdx.x;
+	d_spectra[t]=ftemp1;
+	d_spectra[t+nChannels]=ftemp2;
+	d_spectra[t+2*nChannels]=ftemp3;
+	d_spectra[t+3*nChannels]=ftemp4;
+	return;
+}
+
+__global__ void Fir_ldg(float2* d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
+	int t = 0;
+	int bl= 4*blockIdx.x*nChannels;
+	int ypos = blockDim.x*blockIdx.y + yshift;
+	float2 ftemp1 = make_float2(0.0,0.0);
+	float2 ftemp2 = make_float2(0.0,0.0);
+	float2 ftemp3 = make_float2(0.0,0.0);
+	float2 ftemp4 = make_float2(0.0,0.0);
+	float temp;
+
+	for(t=ypos + threadIdx.x;t<(nTaps)*nChannels;t+=nChannels){
+	  temp = __ldg(&d_coeff[t]); 
+	  ftemp1.x += temp*__ldg(&d_data[bl+t].x);
+	  ftemp1.y += temp*__ldg(&d_data[bl+t].y);
+	  ftemp2.x += temp*__ldg(&d_data[bl+nChannels+t].x);
+	  ftemp2.y += temp*__ldg(&d_data[bl+nChannels+t].y);
+	  ftemp3.x += temp*__ldg(&d_data[bl+2*nChannels+t].x);
+	  ftemp3.y += temp*__ldg(&d_data[bl+2*nChannels+t].y);
+	  ftemp4.x += temp*__ldg(&d_data[bl+3*nChannels+t].x);
+	  ftemp4.y += temp*__ldg(&d_data[bl+3*nChannels+t].y);
+	}
+
+	t=bl + ypos + threadIdx.x;
+	d_spectra[t]=ftemp1;
+	d_spectra[t+nChannels]=ftemp2;
+	d_spectra[t+2*nChannels]=ftemp3;
+	d_spectra[t+3*nChannels]=ftemp4;
+	return;
+}
+
+__global__ void Fir_fmaf(float2* __restrict__ const d_data, float* __restrict__ const d_coeff, int nTaps, int nChannels, int yshift, float2* __restrict__ d_spectra) {
+	int t = 0;
+	int bl= 4*blockIdx.x*nChannels;
+	int ypos = blockDim.x*blockIdx.y + yshift;
+	float2 ftemp1 = make_float2(0.0,0.0);
+	float2 ftemp2 = make_float2(0.0,0.0);
+	float2 ftemp3 = make_float2(0.0,0.0);
+	float2 ftemp4 = make_float2(0.0,0.0);
+	float temp;
+
+	for(t=ypos + threadIdx.x;t<(nTaps)*nChannels;t+=nChannels){
+	  temp = d_coeff[t]; 
 		ftemp1.x = __fmaf_rn(temp,d_data[bl+t].x,ftemp1.x);
 		ftemp1.y = __fmaf_rn(temp,d_data[bl+t].y,ftemp1.y);
 		ftemp2.x = __fmaf_rn(temp,d_data[bl+nChannels+t].x,ftemp2.x);
@@ -92,6 +182,36 @@ __global__ void Fir_SpB_shared(float2* __restrict__  d_data, float* __restrict__
 		ftemp3.y = __fmaf_rn(temp,d_data[bl+2*nChannels+t].y,ftemp3.y);
 		ftemp4.x = __fmaf_rn(temp,d_data[bl+3*nChannels+t].x,ftemp4.x);
 		ftemp4.y = __fmaf_rn(temp,d_data[bl+3*nChannels+t].y,ftemp4.y);
+	}
+
+	t=bl + ypos + threadIdx.x;
+	d_spectra[t]=ftemp1;
+	d_spectra[t+nChannels]=ftemp2;
+	d_spectra[t+2*nChannels]=ftemp3;
+	d_spectra[t+3*nChannels]=ftemp4;
+	return;
+}
+
+__global__ void Fir_fmaf_ldg(float2* d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
+	int t = 0;
+	int bl= 4*blockIdx.x*nChannels;
+	int ypos = blockDim.x*blockIdx.y + yshift;
+	float2 ftemp1 = make_float2(0.0,0.0);
+	float2 ftemp2 = make_float2(0.0,0.0);
+	float2 ftemp3 = make_float2(0.0,0.0);
+	float2 ftemp4 = make_float2(0.0,0.0);
+	float temp;
+
+	for(t=ypos + threadIdx.x;t<(nTaps)*nChannels;t+=nChannels){
+	  temp = __ldg(&d_coeff[t]); 
+		ftemp1.x = __fmaf_rn(temp,__ldg(&d_data[bl+t].x),ftemp1.x);
+		ftemp1.y = __fmaf_rn(temp,__ldg(&d_data[bl+t].y),ftemp1.y);
+		ftemp2.x = __fmaf_rn(temp,__ldg(&d_data[bl+nChannels+t].x),ftemp2.x);
+		ftemp2.y = __fmaf_rn(temp,__ldg(&d_data[bl+nChannels+t].y),ftemp2.y);
+		ftemp3.x = __fmaf_rn(temp,__ldg(&d_data[bl+2*nChannels+t].x),ftemp3.x);
+		ftemp3.y = __fmaf_rn(temp,__ldg(&d_data[bl+2*nChannels+t].y),ftemp3.y);
+		ftemp4.x = __fmaf_rn(temp,__ldg(&d_data[bl+3*nChannels+t].x),ftemp4.x);
+		ftemp4.y = __fmaf_rn(temp,__ldg(&d_data[bl+3*nChannels+t].y),ftemp4.y);
 	}
 
 	t=bl + ypos + threadIdx.x;
@@ -200,12 +320,12 @@ void gpu_code(  float2 *data_in,
 		int nKernels=(int) nChannels/blockSize.x;
 		int remainder=nChannels-nKernels*blockSize.x;
 		for (int nutak=0;nutak<nKernels;nutak++){	
-			Fir_SpB_shared<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nutak*blockSize.x, (float2*) d_spectra + i*maxgrid_x*nChannels);
+			Fir_simple<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nutak*blockSize.x, (float2*) d_spectra + i*maxgrid_x*nChannels);
 		}
 		if (remainder>0){
 			int old_blockSize = blockSize.x;
 			blockSize.x=remainder;
-			Fir_SpB_shared<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nKernels*old_blockSize, (float2*) d_spectra + i*maxgrid_x*nChannels);
+			Fir_simple<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nKernels*old_blockSize, (float2*) d_spectra + i*maxgrid_x*nChannels);
 		}
 		timer.Stop();
 	 	fir_time+=timer.Elapsed();
