@@ -1,9 +1,17 @@
 #********************************************************************
+#*	default line styles
+#********************************************************************
+set style line 10 linetype -1 linewidth 2 linecolor rgb 'black'
+set style line 11 linetype  6 linewidth 2 linecolor rgb 'black'
+set style line 20 linetype  2 linewidth 2 linecolor rgb 'blue'
+set style line 21 linetype  8 linewidth 2 linecolor rgb 'blue'
+
+#********************************************************************
 #*                   Spectra
 #********************************************************************
 #--------> Time
 set term postscript eps enhanced color 'Times-Italic' 18
-set title "GPU (k40) Taps=8, Channels=1024"
+set title "GPU (Tesla k40m) Taps=8, Channels=1024"
 set output "GPU [t][S].eps"
 set ylabel "Time[s]" offset 0,0 font "Times-Italic,22"
 set xlabel "Spectra" rotate by 90  offset 1,0 font "Times-Italic,22"
@@ -11,27 +19,26 @@ set xtics ("15000" 15000, "30000" 30000, "60000" 60000, "120000" 120000, "240000
 set key top left
 set logscale x
 set grid
-plot '../k40-simple-spectra.dat' using 1:3 w lines lt -1 lw 3 lc rgb 'black' title 'Simple [PPF=FIR+FFT]'\
-,'../k40-simple-spectra.dat' using 1:2 w lines lt 6 lw 3 lc rgb 'black' title 'Simple [FIR]'\
-,'../k40-ldg-spectra.dat' using 1:2 w lines lt -1 lw 3 lc rgb 'blue' title 'ldg [FIR]'\
-,'../k40-ldg-spectra.dat' using 1:3 w lines lt 6 lw 3 lc rgb 'blue' title 'ldg [PPF=FIR+FFT]'
-reset;
+plot '../k40-simple-spectra.dat' using 1:3 w lines ls 10 title 'Simple [PPF=FIR+FFT]'\
+,'../k40-simple-spectra.dat' using 1:2 w lines ls 11 title 'Simple [FIR]'\
+,'../k40-ldg-spectra.dat' using 1:3 w lines ls 20 title 'ldg [PPF=FIR+FFT]'\
+,'../k40-ldg-spectra.dat' using 1:2 w lines ls 21 title 'ldg [FIR]'
 
 #--------> Flops
-set term postscript eps enhanced color 'Times-Italic' 18
-set title "GPU (k40) Taps=8, Channels=1024"
+#set term postscript eps enhanced color 'Times-Italic' 18
+#set title "GPU (Tesla k40m) Taps=8, Channels=1024"
 set output "GPU [f][S].eps"
 set ylabel "Flops" offset 0,0 font "Times-Italic,22"
-set xlabel "Spectra" rotate by 90  offset 1,0 font "Times-Italic,22"
-set xtics ("15000" 15000, "30000" 30000, "60000" 60000, "120000" 120000, "240000" 240000)
+#set xlabel "Spectra" rotate by 90  offset 1,0 font "Times-Italic,22"
+#set xtics ("15000" 15000, "30000" 30000, "60000" 60000, "120000" 120000, "240000" 240000)
 set key top left
-set logscale x
+#set logscale x
 set grid
-plot '../k40-simple-spectra.dat' using 1:5 w lines lt -1 lw 3 lc rgb 'black' title 'Gflops-Simple [FIR]'\
-,'../k40-ldg-spectra.dat' using 1:5 w lines lt 6 lw 3 lc rgb 'green' title 'Gflops-ldg [FIR]'\
-,'../k40-restrict-spectra.dat' using 1:5 w lines lt 6 lw 3 lc rgb 'red' title 'Gflops-restrict [FIR]'\
-,'../k40-fmaf-spectra.dat' using 1:5 w lines lt 6 lw 3 lc rgb 'blue' title 'Gflops-fmaf [FIR]'\
-,'../k40-fmaf-ldg-spectra.dat' using 1:5 w lines lt 6 lw 3 lc rgb 'yellow' title 'Gflops-fmaf-ldg [FIR]'
+plot '../k40-simple-spectra.dat' using 1:5 w lines ls 10 title 'Gflops-Simple [FIR]'\
+,'../k40-ldg-spectra.dat' using 1:5 w lines ls 20 title 'Gflops-ldg [FIR]'\
+#,'../k40-restrict-spectra.dat' using 1:5 w lines lt 6 lw 3 lc rgb 'red' title 'Gflops-restrict [FIR]'\
+#,'../k40-fmaf-spectra.dat' using 1:5 w lines lt 6 lw 3 lc rgb 'blue' title 'Gflops-fmaf [FIR]'\
+#,'../k40-fmaf-ldg-spectra.dat' using 1:5 w lines lt 6 lw 3 lc rgb 'yellow' title 'Gflops-fmaf-ldg [FIR]'
 #,'../k40-simple-spectra.dat' using 1:7 w lines lt 3 lw 3 lc rgb 'black' title 'Gflops [PPF=FIR+FFT]'
 reset;
 
