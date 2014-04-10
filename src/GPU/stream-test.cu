@@ -8,6 +8,8 @@
 #include "data.h"
 #include "timer.h"
 
+#define NUMBER 3
+
 __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coeff, const int nTaps, const int nChannels, float2 *spectra)
 {
 	int tx = threadIdx.x + blockDim.x*blockIdx.y;
@@ -29,34 +31,44 @@ __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coef
 	//return;
 }
 
-__global__ void Fir_SpB(float2* __restrict__  d_data, float* __restrict__ d_coeff, int nTaps, int nChannels, int yshift, float2* __restrict__ d_spectra) {
+__global__ void Fir_SpB(float2* d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
 	int t = 0;
 	int bl= blockIdx.x*nChannels;
-	int ypos = blockDim.x*blockIdx.y + yshift;
-	float2 ftemp1;
-	ftemp1.x=0.0f;ftemp1.y=0.0f;
+	float temp;
+	float2 ftemp[NUMBER];
 
-	for(t=ypos + threadIdx.x;t<nTaps*nChannels;t+=nChannels){
-		ftemp1.x  += d_coeff[t]*d_data[bl+t].x;
-		ftemp1.y  += d_coeff[t]*d_data[bl+t].y;
+	for (int i = 0; i < NUMBER; i++){
+	  ftemp[i].x = 0.0f;
+	  ftemp[i].y = 0.0f;
 	}
 
-	t=bl + ypos + threadIdx.x;
-	d_spectra[t]=ftemp1;
+	for(t=yshift + threadIdx.x;t<nTaps*nChannels;t+=nChannels){
+	  for (int i = 0; i < NUMBER; i++){
+	    temp = __ldg(&d_coeff[t]);
+	    ftemp[i].x  += temp*__ldg(&d_data[bl+i*nChannels+t].x);
+	    ftemp[i].y  += temp*__ldg(&d_data[bl+i*nChannels+t].y);
+	  }
+	}
+
+	t=bl + yshift + threadIdx.x;
+	for (int i = 0; i < NUMBER; i++){
+	  d_spectra[t + i*nChannels]=ftemp[i];
+	}
+
 	return;
 }
 
 
-void gpu_code(  float2 *data, 
-				float2 *spectra, 
-				float *coeff,
-				const int nChannels,
-				unsigned int nBlocks, 
-				unsigned int filesize,
-				int nThreads, 
-				int nTaps, 
-				int nStreams,
-				int seg_blocks){
+void gpu_code( float2 *data, 
+	       float2 *spectra, 
+	       float *coeff,
+	       const int nChannels,
+	       unsigned int nBlocks, 
+	       unsigned int filesize,
+	       int nThreads, 
+	       int nTaps, 
+	       int nStreams,
+	       int seg_blocks){
 					
 bool WRITE=true;
 //------------ initialize card -----------
@@ -154,7 +166,7 @@ bool WRITE=true;
 		int remainder=nChannels-nKernels*blockSize0.x;
 	
 	timer.Start();
-for (int k=0; k<10; k++){
+for (int k=0; k<1; k++){
 for (int i = 0; i < run_blocks; i+=seg_blocks*nStreams){
 	
 	for (int j = 0; j < nStreams; j++){
@@ -185,7 +197,7 @@ for (int i = 0; i < run_blocks; i+=seg_blocks*nStreams){
 	sprintf(str,"GPU-stream-%s.dat",devProp.name);
 	
 		printf("\n Write results into file...\t");
-		if (WRITE) save_time(str, nBlocks-nTaps+1, fir_time, fft_time, mem_time_in, mem_time_out, nChannels, nTaps, nStreams, nThreads);
+		if (WRITE) save_time(str, nBlocks-nTaps+1, fir_time, fft_time, seg_blocks, mem_time_out, nChannels, nTaps, nStreams, nThreads);
 		printf("\t done.\n-------------------------------------\n");
 
 
