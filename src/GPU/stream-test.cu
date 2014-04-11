@@ -8,7 +8,7 @@
 #include "data.h"
 #include "timer.h"
 
-#define NUMBER 3
+#define NUMBER 4 
 
 __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coeff, const int nTaps, const int nChannels, float2 *spectra)
 {
@@ -31,9 +31,9 @@ __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coef
 	//return;
 }
 
-__global__ void Fir_SpB(float2* d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
+__global__ void Fir_SpB(float2* d_data, float* __restrict__ d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
 	int t = 0;
-	int bl= blockIdx.x*nChannels;
+	int bl= NUMBER*blockIdx.x*nChannels;
 	float temp;
 	float2 ftemp[NUMBER];
 
@@ -44,7 +44,7 @@ __global__ void Fir_SpB(float2* d_data, float* d_coeff, int nTaps, int nChannels
 
 	for(t=yshift + threadIdx.x;t<nTaps*nChannels;t+=nChannels){
 	  for (int i = 0; i < NUMBER; i++){
-	    temp = __ldg(&d_coeff[t]);
+	    temp = d_coeff[t];
 	    ftemp[i].x  += temp*__ldg(&d_data[bl+i*nChannels+t].x);
 	    ftemp[i].y  += temp*__ldg(&d_data[bl+i*nChannels+t].y);
 	  }
@@ -131,7 +131,7 @@ bool WRITE=true;
 	// grid and block size
 	//int grid_0 = (int)(seg_blocks/2);
 	int blocks_y = 1;
-	dim3 gridSize0( seg_blocks, blocks_y, 1);
+	dim3 gridSize0( seg_blocks/NUMBER, blocks_y, 1);
 	dim3 blockSize0(nThreads/gridSize0.y, 1, 1); 
 	//dim3 gridSize1( run_blocks - grid_0, blocks_y, 1);
 	//dim3 blockSize1(nChannels/gridSize1.y, 1, 1); 
@@ -157,13 +157,17 @@ bool WRITE=true;
 
 	//Create fft Plan
 	cufftHandle plan[nStreams];
+	cufftResult error;
 	for (int i = 0; i < nStreams; i++){
-	cufftPlan1d(&plan[i], nChannels, CUFFT_C2C, seg_blocks);
-	cufftSetStream(plan[i],stream[i]);
+	 error = cufftPlan1d(&plan[i], nChannels, CUFFT_C2C, seg_blocks);
+	 if (CUFFT_SUCCESS != error ) printf("\nStream: %i Cufft Error: %d\n", i, error);
+	  error = cufftSetStream(plan[i],stream[i]);
+	  if (CUFFT_SUCCESS != error ) printf("\nStream: %i Cufft Error: %d\n", i, error);
 	}
-
 		int nKernels=(int) nChannels/blockSize0.x;
 		int remainder=nChannels-nKernels*blockSize0.x;
+
+	//checkCudaErrors(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 	
 	timer.Start();
 for (int k=0; k<1; k++){
@@ -183,10 +187,11 @@ for (int i = 0; i < run_blocks; i+=seg_blocks*nStreams){
 			}
 			
 			cufftExecC2C(plan[j], (cufftComplex *)d_spectra[j], (cufftComplex *)d_spectra[j], CUFFT_FORWARD);
-			checkCudaErrors(cudaMemcpyAsync(spectra + j*seg_offset + i*nChannels, d_spectra[j], sizeof(float2)*SegSize, cudaMemcpyDeviceToHost, stream[j]));
+			checkCudaErrors(cudaMemcpyAsync(spectra + j*seg_offset + i*nChannels, d_spectra[j], sizeof(float2)*(SegSize-(nTaps-1)*nChannels), cudaMemcpyDeviceToHost, stream[j]));
 	}
 }
 }
+	//cudaDeviceSynchronize();
 	timer.Stop();
 	fir_time=timer.Elapsed();
 	printf("\nDone in %g ms.\n", fir_time);
