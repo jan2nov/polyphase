@@ -8,7 +8,7 @@
 #include "data.h"
 #include "timer.h"
 
-#define NUMBER 4 
+#define NUMBER 4
 
 __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coeff, const int nTaps, const int nChannels, float2 *spectra)
 {
@@ -31,7 +31,7 @@ __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coef
 	//return;
 }
 
-__global__ void Fir_SpB(float2* d_data, float* __restrict__ d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
+__global__ void Fir_SpB(float2* __restrict__ d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
 	int t = 0;
 	int bl= NUMBER*blockIdx.x*nChannels;
 	float temp;
@@ -44,9 +44,9 @@ __global__ void Fir_SpB(float2* d_data, float* __restrict__ d_coeff, int nTaps, 
 
 	for(t=yshift + threadIdx.x;t<nTaps*nChannels;t+=nChannels){
 	  for (int i = 0; i < NUMBER; i++){
-	    temp = d_coeff[t];
-	    ftemp[i].x  += temp*__ldg(&d_data[bl+i*nChannels+t].x);
-	    ftemp[i].y  += temp*__ldg(&d_data[bl+i*nChannels+t].y);
+	    temp = __ldg(&d_coeff[t]);
+	    ftemp[i].x  += temp*(d_data[bl+i*nChannels+t].x);
+	    ftemp[i].y  += temp*(d_data[bl+i*nChannels+t].y);
 	  }
 	}
 
@@ -167,7 +167,7 @@ bool WRITE=true;
 		int nKernels=(int) nChannels/blockSize0.x;
 		int remainder=nChannels-nKernels*blockSize0.x;
 
-	//checkCudaErrors(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+	checkCudaErrors(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 	
 	timer.Start();
 for (int k=0; k<1; k++){
