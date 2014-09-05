@@ -8,8 +8,9 @@
 #include "data.h"
 #include "timer.h"
 
-#define NUMBER 8
-
+#define NUMBER 3
+#define NTIMES 1
+y
 __constant__ float C_coeff[4096];
 
 __global__ void Fir( const float *d_signal_real, const float *d_signal_img, const float *coeff, const int nTaps, const int nChannels, float2 *spectra)
@@ -138,10 +139,10 @@ __global__ void Fir_restrict(float2* __restrict__ const d_data, float* __restric
 	return;
 }
 
-__global__ void Fir_ldg(float2* d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
+__global__ void Fir_ldg(float2 const* __restrict__ d_data, float const* __restrict__ d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
 	int t = 0;
 	int bl= NUMBER*blockIdx.x*nChannels;
-	//int ypos = blockDim.x*blockIdx.y + yshift;
+	int ypos = blockDim.x*blockIdx.y + yshift;
 	float temp;
 	float2 ftemp[NUMBER];
 	
@@ -150,22 +151,25 @@ __global__ void Fir_ldg(float2* d_data, float* d_coeff, int nTaps, int nChannels
 	  ftemp[i].y = 0.0f;
 	}
 
-	for(t=yshift + threadIdx.x;t<(nTaps)*nChannels;t+=nChannels){
+	for(t=yshift + threadIdx.x+ypos; t<(nTaps)*nChannels; t+=nChannels){
 	  //temp = __ldg(&d_coeff[t]); 
   	  temp = d_coeff[t]; 
 	  for(int i=0;i<NUMBER;i++){
-	    ftemp[i].x += temp*__ldg(&d_data[bl+i*nChannels + t].x);
-	    ftemp[i].y += temp*__ldg(&d_data[bl+i*nChannels + t].y);
+	    //ftemp[i].x += temp*__ldg(&d_data[bl+i*nChannels + t].x);
+	    ftemp[i].x += temp*(d_data[bl+i*nChannels + t].x);
+	    //ftemp[i].y += temp*__ldg(&d_data[bl+i*nChannels + t].y);
+	    ftemp[i].y += temp*(d_data[bl+i*nChannels + t].y);
 	  }
 	}
 
-	t=bl + yshift + threadIdx.x;
+	t=bl + yshift + threadIdx.x+ypos;
 	for (int i=0;i<NUMBER;i++){
 	  d_spectra[t + i*nChannels]=ftemp[i];
 	}
 
 	return;
 }
+/*
 __global__ void Fir_ldg2(float2* d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
 	int t = 0;
 	int bl= 5*blockIdx.x*nChannels;
@@ -199,37 +203,35 @@ __global__ void Fir_ldg2(float2* d_data, float* d_coeff, int nTaps, int nChannel
 	d_spectra[t+4*nChannels]=ftemp5;
 	return;
 }
-
+*/
 __global__ void Fir_fmaf(float2* __restrict__ const d_data, float* __restrict__ const d_coeff, int nTaps, int nChannels, int yshift, float2* __restrict__ d_spectra) {
 	int t = 0;
-	int bl= 4*blockIdx.x*nChannels;
+	int bl= NUMBER*blockIdx.x*nChannels;
 	int ypos = blockDim.x*blockIdx.y + yshift;
-	float2 ftemp1 = make_float2(0.0,0.0);
-	float2 ftemp2 = make_float2(0.0,0.0);
-	float2 ftemp3 = make_float2(0.0,0.0);
-	float2 ftemp4 = make_float2(0.0,0.0);
+	float2 ftemp[NUMBER];
 	float temp;
-
+	
+	for (int i = 0; i<NUMBER;i++){
+	  ftemp[i].x = 0.0f;
+	  ftemp[i].y = 0.0f;
+	}
+		
 	for(t=ypos + threadIdx.x;t<(nTaps)*nChannels;t+=nChannels){
 	  temp = d_coeff[t]; 
-		ftemp1.x = __fmaf_rn(temp,d_data[bl+t].x,ftemp1.x);
-		ftemp1.y = __fmaf_rn(temp,d_data[bl+t].y,ftemp1.y);
-		ftemp2.x = __fmaf_rn(temp,d_data[bl+nChannels+t].x,ftemp2.x);
-		ftemp2.y = __fmaf_rn(temp,d_data[bl+nChannels+t].y,ftemp2.y);
-		ftemp3.x = __fmaf_rn(temp,d_data[bl+2*nChannels+t].x,ftemp3.x);
-		ftemp3.y = __fmaf_rn(temp,d_data[bl+2*nChannels+t].y,ftemp3.y);
-		ftemp4.x = __fmaf_rn(temp,d_data[bl+3*nChannels+t].x,ftemp4.x);
-		ftemp4.y = __fmaf_rn(temp,d_data[bl+3*nChannels+t].y,ftemp4.y);
+	    for(int i=0;i<NUMBER;i++){
+		ftemp[i].x = __fmaf_rn(temp,d_data[bl+i*nChannels + t].x, ftemp[i].x);
+		ftemp[i].y = __fmaf_rn(temp,d_data[bl+i*nChannels + t].y, ftemp[i].y);
+		}
 	}
 
-	t=bl + ypos + threadIdx.x;
-	d_spectra[t]=ftemp1;
-	d_spectra[t+nChannels]=ftemp2;
-	d_spectra[t+2*nChannels]=ftemp3;
-	d_spectra[t+3*nChannels]=ftemp4;
+	t=bl + yshift + threadIdx.x;
+	for (int i=0;i<NUMBER;i++){
+	  d_spectra[t + i*nChannels]=ftemp[i];
+	}
+	
 	return;
 }
-
+/*
 __global__ void Fir_fmaf_ldg(float2* d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
 	int t = 0;
 	int bl= 4*blockIdx.x*nChannels;
@@ -259,7 +261,7 @@ __global__ void Fir_fmaf_ldg(float2* d_data, float* d_coeff, int nTaps, int nCha
 	d_spectra[t+3*nChannels]=ftemp4;
 	return;
 }
-
+*/
 void gpu_code(  float2 *data_in, 
 		float2 *spectra, 
 		float *coeff,
@@ -286,7 +288,7 @@ void gpu_code(  float2 *data_in,
 		checkCudaErrors(cudaGetDeviceProperties(&devProp,device));	
 		printf("\n\t Using device:\t\t\t%s\n", devProp.name);
 		printf("\n\t Max grid size:\t\t\t%d\n", devProp.maxGridSize[0]);
-		maxgrid_x = devProp.maxGridSize[0];
+		maxgrid_x = devProp.maxGridSize[0]-3;
 	}
 		checkCudaErrors(cudaSetDevice(device));
 	
@@ -302,38 +304,56 @@ void gpu_code(  float2 *data_in,
 	float fft_time = 0.0f;
 	float mem_time_in = 0.0f;
 	float mem_time_out = 0.0f;
+	unsigned int orig_filesize = filesize;
+	unsigned int orig_nBlocks = nBlocks;
+	int nSteps = 1;
+	size_t mem_free_0=0, mem_tot_0=0, mem_free_1=0;
+	
+	checkCudaErrors(cudaMemGetInfo(&mem_free_0, & mem_tot_0));
+	printf("\nFree memory: %zu \t Total Memory: %zu\n", mem_free_0/1024/1024, mem_tot_0/1024/1024);
+
+	if (filesize > (60000+nTaps-1)*nChannels) {
+	   filesize = (60000+nTaps-1)*nChannels;
+	   nBlocks = filesize/nChannels;
+	   nSteps = (orig_nBlocks - nTaps + 1)/(nBlocks - nTaps + 1);
+	}
 
 	//malloc
 	printf("\nDevice memory allocation...: \t\t");
 	timer.Start();
-	checkCudaErrors(cudaMalloc((void **) &d_spectra, sizeof(float2)*(filesize)));
+	checkCudaErrors(cudaMalloc((void **) &d_spectra, sizeof(float2)*(orig_filesize)));
 	checkCudaErrors(cudaMalloc((void **) &d_coeff,   sizeof(float)*nChannels*nTaps));
 	checkCudaErrors(cudaMalloc((void **) &d_data_in,    sizeof(float2)*filesize));
 	timer.Stop();
 	printf("done in %g ms.", timer.Elapsed());
+	checkCudaErrors(cudaMemGetInfo(&mem_free_1, &mem_tot_0));
 
-	printf("\n\t\td_spectra using filesize: \t%g MB.", sizeof(float2)*(filesize)/1024.0/1024);
-	printf("\n\t\td_coeff using filesize: \t%g MB.", sizeof(float)*filesize/1024.0/1024);
+	printf("\n\t\tFilesize orig: \t%u spektra.", orig_filesize/nChannels);
+	printf("\n\t\td_spectra using filesize: \t%g MB.", sizeof(float2)*(orig_filesize)/1024.0/1024);
+	printf("\n\t\td_coeff using filesize: \t%g MB.", sizeof(float)*nTaps*nChannels/1024.0/1024);
 	printf("\n\t\td_real using filesize: \t\t%g MB.", sizeof(float)*filesize/1024.0/1024);
 	printf("\n\t\td_img using filesize: \t\t%g MB.", sizeof(float)*filesize/1024.0/1024);
 	printf("\n\t\t----------------------\t\t-----------");
-	printf("\n\t\tTotal: \t\t\t\t%g MB.\n\n",sizeof(float)*(5.0*filesize)/1024/1024);
+	printf("\n\t\tTotal: \t\t\t\t%g MB.",sizeof(float)*(4.0*filesize)/1024/1024+sizeof(float)*nTaps*nChannels/1024.0/1024);
+	printf("\n\t\tAllocated: \t\t\t%zu MB.\n\n", (mem_free_0-mem_free_1)/1024/1024);
 	
 	// set to 0.0
 	printf("\nDevice memset...\t\t\t");
 		timer.Start();
-			checkCudaErrors(cudaMemset(d_spectra, 0.0, sizeof(float2)*(filesize)));
+			checkCudaErrors(cudaMemset(d_spectra, 0.0, sizeof(float2)*(orig_filesize)));
 		timer.Stop();
 	printf("done in %g ms.", timer.Elapsed());
 
 	// copy data to device
+	for (int j=0; j<nSteps*(nBlocks-nTaps+1); j+=nBlocks-nTaps+1){
+	printf("\n-------------- run %i------------\n", j);
 	printf("\nCopy data from host to device...\t");
 		timer.Start();
 			checkCudaErrors(cudaMemcpy(d_coeff, coeff, nChannels*nTaps*sizeof(float), cudaMemcpyHostToDevice));
 			//checkCudaErrors(cudaMemcpyToSymbol(C_coeff,  coeff,   sizeof(float)*nChannels*nTaps));
-			checkCudaErrors(cudaMemcpy(d_data_in, data_in, filesize*sizeof(float2), cudaMemcpyHostToDevice));
+			checkCudaErrors(cudaMemcpy(d_data_in, data_in+j*nChannels, filesize*sizeof(float2), cudaMemcpyHostToDevice));
 		timer.Stop();
-	mem_time_in=timer.Elapsed();
+	mem_time_in+=timer.Elapsed();
 	printf("done in %g ms.\n", mem_time_in);
 
 	printf("\n\t\t------------ Kernel run-----------------\n");		
@@ -343,7 +363,7 @@ void gpu_code(  float2 *data_in,
 	printf("n_cycle : %d \t nTaps: %d\n", n_cycle, nTaps);
 	
 	cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
-
+ for (int k = 0; k<NTIMES ; k++){
 	for (int i = 0; i < n_cycle; i++){
 		
 		if (maxgrid_x < run_blocks){
@@ -355,15 +375,15 @@ void gpu_code(  float2 *data_in,
 		dim3 blockSize(nThreads/gridSize.y, 1, 1); 
 	
 		timer.Start();
-		int nKernels=(int) nChannels/blockSize.x;
-		int remainder=nChannels-nKernels*blockSize.x;
+		int nKernels=1;//(int) nChannels/blockSize.x;
+		int remainder=0;//nChannels-nKernels*blockSize.x;
 		for (int nutak=0;nutak<nKernels;nutak++){	
-		  Fir_ldg<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nutak*blockSize.x, (float2*) d_spectra + i*maxgrid_x*nChannels);
+		  Fir_ldg<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nutak*blockSize.x, (float2*) d_spectra + i*maxgrid_x*nChannels+j*nChannels);
 		}
 		if (remainder>0){
 			int old_blockSize = blockSize.x;
 			blockSize.x=remainder;
-			Fir_ldg<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nKernels*old_blockSize, (float2*) d_spectra + i*maxgrid_x*nChannels);
+			Fir_ldg<<<gridSize, blockSize>>>((float2*) d_data_in + i*(maxgrid_x)*nChannels, d_coeff, nTaps, nChannels, nKernels*old_blockSize, (float2*) d_spectra + i*maxgrid_x*nChannels+j*nChannels);
 		}
 		timer.Stop();
 	 	fir_time+=timer.Elapsed();
@@ -376,18 +396,27 @@ void gpu_code(  float2 *data_in,
 			checkCudaErrors(cudaGetLastError());
 			//checkCudaErrors(cudaDeviceSynchronize());
 		//-----------------------
-	
+
 		printf("\nFir kernel %d\n", i);
 		printf("\n\n blocks \t time \t\t threads \t bandwidth \t flops");
 		printf("\n%d \t\t %lf \t %i \t\t %g \t %g\n",grid_x, fir_time, nThreads/blocks_y, 
-													(3*nChannels*nTaps*sizeof(float)+nChannels*2*sizeof(float))*(nBlocks-nTaps+1)*1000/fir_time, 
-													(4*nTaps)*nChannels*(nBlocks-nTaps+1)*1000.0/fir_time);
+													(3.0*nChannels*nTaps*sizeof(float)+nChannels*2.0*sizeof(float))*(orig_nBlocks-nTaps+1)*1000.0*NTIMES/fir_time, 
+													(4*nTaps)*nChannels*(orig_nBlocks-nTaps+1)*1000.0*NTIMES/fir_time);
+}
+}
 }
 //--------------- cuFFT ----------------------------
 
+checkCudaErrors(cudaFree(d_data_in));
+checkCudaErrors(cudaFree(d_coeff));
+
 	//Create fft Plan
 	cufftHandle plan;
-	cufftPlan1d(&plan, nChannels, CUFFT_C2C, nBlocks);
+	cufftResult error;
+	error = cufftPlan1d(&plan, nChannels, CUFFT_C2C, orig_nBlocks);
+	if (CUFFT_SUCCESS != error){
+		printf("CUFFT error: %d", error);
+	}
 	
 	//execute plan and copy back to host
 	printf("\n\ncuFFT run..\t\t");
@@ -405,7 +434,7 @@ void gpu_code(  float2 *data_in,
 //--------------- copy data back ----------------------------
 	printf("Copy data from device to host \t");
 	timer.Start();
-		checkCudaErrors(cudaMemcpy(spectra,d_spectra,(filesize)*sizeof(float2), cudaMemcpyDeviceToHost));	
+		checkCudaErrors(cudaMemcpy(spectra,d_spectra,(orig_filesize)*sizeof(float2), cudaMemcpyDeviceToHost));	
 	timer.Stop();
 	printf("done in %g ms.\n", timer.Elapsed());
 	mem_time_out=timer.Elapsed();
@@ -418,14 +447,12 @@ printf("\nTotal execution time %g ms.\n", mem_time_in + fir_time + mem_time_out)
 	sprintf(str,"GPU-polyphase.dat");
 	
 		printf("\n Write results into file...\t");
-		if (WRITE) save_time(str, nBlocks-nTaps+1, fir_time, fft_time, mem_time_in, mem_time_out, nChannels, nTaps, 0, nThreads);
+		if (WRITE) save_time(str, (orig_nBlocks-nTaps+1)*NTIMES, fir_time, fft_time, mem_time_in, mem_time_out, nChannels, nTaps, 0, nThreads);
 		printf("\t done.\n-------------------------------------\n");
 
 //--------------- clean-up process ----------------------------
 	
 	checkCudaErrors(cudaFree(d_spectra));
-	checkCudaErrors(cudaFree(d_data_in));
-	checkCudaErrors(cudaFree(d_coeff));
 	// device reset is in the polyphase-analyze.c
 	
 }

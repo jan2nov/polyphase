@@ -31,9 +31,11 @@ int main(int argc, char **argv){
 	float *h_coeff;
 
 	if (argc >= 2) nChannels  = atof(argv[1]);
-	if (argc >= 3) num_threads = atof(argv[2]);
+	if (argc >= 3) NUM_BLOCKS = atof(argv[2]);
 	if (argc >= 4) nTaps 	   = (atof(argv[3]));
 	if (argc >= 5) data_size   = (atof(argv[4])+nTaps-1)*nChannels;
+	
+	num_threads = nChannels;
 
 	nBlocks = (data_size)/nChannels;
 

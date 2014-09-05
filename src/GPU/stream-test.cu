@@ -31,7 +31,7 @@ __global__ void Fir(float *d_signal_real, float *d_signal_img, const float* coef
 	//return;
 }
 
-__global__ void Fir_SpB(float2* __restrict__ d_data, float* d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
+__global__ void Fir_SpB(float2 const* __restrict__ d_data, float const* __restrict__ d_coeff, int nTaps, int nChannels, int yshift, float2* d_spectra) {
 	int t = 0;
 	int bl= NUMBER*blockIdx.x*nChannels;
 	float temp;
@@ -44,7 +44,7 @@ __global__ void Fir_SpB(float2* __restrict__ d_data, float* d_coeff, int nTaps, 
 
 	for(t=yshift + threadIdx.x;t<nTaps*nChannels;t+=nChannels){
 	  for (int i = 0; i < NUMBER; i++){
-	    temp = __ldg(&d_coeff[t]);
+	    temp = (d_coeff[t]);
 	    ftemp[i].x  += temp*(d_data[bl+i*nChannels+t].x);
 	    ftemp[i].y  += temp*(d_data[bl+i*nChannels+t].y);
 	  }
@@ -173,10 +173,11 @@ bool WRITE=true;
 for (int k=0; k<1; k++){
 for (int i = 0; i < run_blocks; i+=seg_blocks*nStreams){
 	
-	for (int j = 0; j < nStreams; j++){
-
+		//for fermi seems better to run firstly the HtD then kernels with DtH
+		for (int j = 0; j < nStreams; j++){
 			checkCudaErrors(cudaMemcpyAsync(d_data[j], data + j*seg_offset + i*nChannels, sizeof(float2)*SegSize, cudaMemcpyHostToDevice, stream[j]));
-		
+		}
+		for (int j = 0; j < nStreams; j++){
 			for (int nutak=0;nutak<nKernels;nutak++){	
 				Fir_SpB<<<gridSize0, blockSize0, 0, stream[j]>>>(d_data[j], d_coeff, nTaps, nChannels, nutak*blockSize0.x, d_spectra[j]);
 			}
@@ -184,11 +185,12 @@ for (int i = 0; i < run_blocks; i+=seg_blocks*nStreams){
 				//int old_blockSize = blockSize0.x;
 				dim3 blockSize1(remainder,1,1);
 				Fir_SpB<<<gridSize0, blockSize1, 0, stream[j]>>>(d_data[j], d_coeff, nTaps, nChannels, nKernels*blockSize0.x, d_spectra[j]);
-			}
-			
+			}	
 			cufftExecC2C(plan[j], (cufftComplex *)d_spectra[j], (cufftComplex *)d_spectra[j], CUFFT_FORWARD);
+				
 			checkCudaErrors(cudaMemcpyAsync(spectra + j*seg_offset + i*nChannels, d_spectra[j], sizeof(float2)*(SegSize-(nTaps-1)*nChannels), cudaMemcpyDeviceToHost, stream[j]));
-	}
+		}
+	
 }
 }
 	//cudaDeviceSynchronize();
